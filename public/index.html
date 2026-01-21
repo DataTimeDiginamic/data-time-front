@@ -2,30 +2,32 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8" />
-    <title>Gestion Clients & Projets</title>
+    <title>Gestion complète</title>
     <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
 <header>
-    <h1>Gestion Clients & Projets</h1>
+    <h1>Gestion complète</h1>
     <nav>
-        <button id="tab-clients" class="tab-button active">Clients</button>
-        <button id="tab-projets" class="tab-button">Projets</button>
+        <button class="tab-button active" id="tab-clients">Clients</button>
+        <button class="tab-button" id="tab-projets">Projets</button>
+        <button class="tab-button" id="tab-salaries">Salariés</button>
+        <button class="tab-button" id="tab-absences">Absences</button>
+        <button class="tab-button" id="tab-taches">Tâches</button>
     </nav>
 </header>
 
 <main>
-    <!-- SECTION CLIENTS -->
+
+    <!-- ========================= CLIENTS ========================= -->
     <section id="section-clients" class="active-section">
         <h2>Clients</h2>
 
         <div class="panel">
-            <h3>Recherche de clients</h3>
+            <h3>Recherche</h3>
             <form id="client-search-form">
-                <label>
-                    Nom du client :
-                    <input type="text" id="client-search-query" />
-                </label>
+                <label>Nom : <input type="text" id="client-search-query"></label>
                 <div class="form-actions">
                     <button type="submit">Rechercher</button>
                     <button type="button" id="client-search-reset" class="secondary">Réinitialiser</button>
@@ -34,49 +36,35 @@
         </div>
 
         <div class="panel">
-            <h3>Liste des clients</h3>
-            <!-- Tableau desktop -->
+            <h3>Liste</h3>
             <table>
-                <thead>
-                <tr>
-                    <th>Id</th>
-                    <th>Nom</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
+                <thead><tr><th>ID</th><th>Nom</th><th>Actions</th></tr></thead>
                 <tbody id="client-table-body"></tbody>
             </table>
-            <!-- Cartes mobile -->
             <div id="client-cards" class="card-list"></div>
         </div>
 
         <div class="panel">
             <h3 id="client-form-title">Créer un client</h3>
             <form id="client-form">
-                <input type="hidden" id="client-id" />
-                <label>
-                    Nom du client :
-                    <input type="text" id="client-nom" required />
-                </label>
+                <input type="hidden" id="client-id">
+                <label>Nom : <input type="text" id="client-nom" required></label>
                 <div class="form-actions">
-                    <button type="submit" id="client-form-submit">Enregistrer</button>
+                    <button type="submit">Enregistrer</button>
                     <button type="button" id="client-form-cancel" class="secondary">Annuler</button>
                 </div>
             </form>
         </div>
     </section>
 
-    <!-- SECTION PROJETS -->
+    <!-- ========================= PROJETS ========================= -->
     <section id="section-projets" class="hidden">
         <h2>Projets</h2>
 
         <div class="panel">
-            <h3>Recherche de projets</h3>
+            <h3>Recherche</h3>
             <form id="projet-search-form">
-                <label>
-                    Nom du projet :
-                    <input type="text" id="projet-search-query" />
-                </label>
+                <label>Nom : <input type="text" id="projet-search-query"></label>
                 <div class="form-actions">
                     <button type="submit">Rechercher</button>
                     <button type="button" id="projet-search-reset" class="secondary">Réinitialiser</button>
@@ -85,46 +73,158 @@
         </div>
 
         <div class="panel">
-            <h3>Liste des projets</h3>
-            <!-- Tableau desktop -->
+            <h3>Liste</h3>
             <table>
-                <thead>
-                <tr>
-                    <th>Id</th>
-                    <th>Nom</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
+                <thead><tr><th>ID</th><th>Nom</th><th>Actions</th></tr></thead>
                 <tbody id="projet-table-body"></tbody>
             </table>
-            <!-- Cartes mobile -->
             <div id="projet-cards" class="card-list"></div>
         </div>
 
         <div class="panel">
             <h3 id="projet-form-title">Créer un projet</h3>
             <form id="projet-form">
-                <input type="hidden" id="projet-id" />
-                <label>
-                    Nom du projet :
-                    <input type="text" id="projet-nom" required />
-                </label>
+                <input type="hidden" id="projet-id">
+                <label>Nom : <input type="text" id="projet-nom" required></label>
                 <div class="form-actions">
-                    <button type="submit" id="projet-form-submit">Enregistrer</button>
+                    <button type="submit">Enregistrer</button>
                     <button type="button" id="projet-form-cancel" class="secondary">Annuler</button>
                 </div>
             </form>
         </div>
     </section>
+
+    <!-- ========================= SALARIES ========================= -->
+    <section id="section-salaries" class="hidden">
+        <h2>Salariés</h2>
+
+        <div class="panel">
+            <h3>Liste</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th><th>Nom</th><th>Prénom</th><th>Poste</th><th>Contrat</th><th>TJM</th><th>Role</th><th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="salarie-table-body"></tbody>
+            </table>
+            <div id="salarie-cards" class="card-list"></div>
+        </div>
+
+        <div class="panel">
+            <h3 id="salarie-form-title">Créer un salarié</h3>
+            <form id="salarie-form">
+                <input type="hidden" id="salarie-id">
+                <label>Nom : <input type="text" id="salarie-nom" required></label>
+                <label>Prénom : <input type="text" id="salarie-prenom" required></label>
+                <label>Poste : <input type="text" id="salarie-poste" required></label>
+                <label>Contrat : <input type="text" id="salarie-contrat" required></label>
+                <label>TJM : <input type="text" id="salarie-tjm" required></label>
+                <label>Role : <input type="number" id="salarie-role" required></label>
+                <div class="form-actions">
+                    <button type="submit">Enregistrer</button>
+                    <button type="button" id="salarie-form-cancel" class="secondary">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- ========================= ABSENCES ========================= -->
+    <section id="section-absences" class="hidden">
+        <h2>Absences</h2>
+
+        <div class="panel">
+            <h3>Liste</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th><th>Type</th><th>Début</th><th>Fin</th><th>Motif</th><th>ID Salarié</th><th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="absence-table-body"></tbody>
+            </table>
+            <div id="absence-cards" class="card-list"></div>
+        </div>
+
+        <div class="panel">
+            <h3 id="absence-form-title">Créer une absence</h3>
+            <form id="absence-form">
+                <input type="hidden" id="absence-id">
+                <label>Type :
+                    <select id="absence-type">
+                        <option value="conge">Congé</option>
+                        <option value="maladie">Maladie</option>
+                    </select>
+                </label>
+                <label>Début : <input type="date" id="absence-debut" required></label>
+                <label>Fin : <input type="date" id="absence-fin"></label>
+                <label>Motif : <input type="text" id="absence-motif"></label>
+                <label>ID Salarié : <input type="number" id="absence-salarie" required></label>
+                <div class="form-actions">
+                    <button type="submit">Enregistrer</button>
+                    <button type="button" id="absence-form-cancel" class="secondary">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- ========================= TACHES ========================= -->
+    <section id="section-taches" class="hidden">
+        <h2>Tâches</h2>
+
+        <div class="panel">
+            <h3>Liste</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th><th>Nom</th><th>Prévu</th><th>Passé</th><th>Début</th><th>Fin</th><th>Statut</th><th>ID Projet</th><th>ID Salarié</th><th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="tache-table-body"></tbody>
+            </table>
+            <div id="tache-cards" class="card-list"></div>
+        </div>
+
+        <div class="panel">
+            <h3 id="tache-form-title">Créer une tâche</h3>
+            <form id="tache-form">
+                <input type="hidden" id="tache-id">
+                <label>Nom : <input type="text" id="tache-nom" required></label>
+                <label>Temps prévisionnel : <input type="number" id="tache-prev" required></label>
+                <label>Temps passé : <input type="number" id="tache-passe" required></label>
+                <label>Début : <input type="date" id="tache-debut" required></label>
+                <label>Fin : <input type="date" id="tache-fin"></label>
+                <label>Statut : <input type="text" id="tache-statut" required></label>
+                <label>ID Projet : <input type="number" id="tache-projet" required></label>
+                <label>ID Salarié : <input type="number" id="tache-salarie" required></label>
+                <div class="form-actions">
+                    <button type="submit">Enregistrer</button>
+                    <button type="button" id="tache-form-cancel" class="secondary">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
 </main>
 
-<footer>
-    <small>Front TypeScript sans framework - connecté à http://localhost:8000/api</small>
-</footer>
-
-<!-- Toast notifications -->
 <div id="toast-container"></div>
 
-<script src="app.js"></script>
+<!-- ========================= REQUIREJS ========================= -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+
+<script>
+    require.config({
+        baseUrl: ".",          // dossier actuel = /public
+        paths: {
+            app: "app"         // app.js dans le même dossier
+        }
+    });
+
+    require(["app"], function () {
+        console.log("Module app chargé !");
+    });
+</script>
+
+
 </body>
 </html>
