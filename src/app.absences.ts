@@ -56,17 +56,17 @@ function renderAbsenceTable(): void {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
-      <td>${a.id_absence}</td>
-      <td>${a.type}</td>
-      <td>${a.debut}</td>
-      <td>${a.fin ?? "-"}</td>
-      <td>${a.motif ?? "-"}</td>
-      <td>${a.id_salarie}</td>
-      <td>
-        <button class="edit-btn" data-id="${a.id_absence}">✏️</button>
-        <button class="delete-btn" data-id="${a.id_absence}">🗑️</button>
-      </td>
-    `;
+            <td>${a.id_absence}</td>
+            <td>${a.type}</td>
+            <td>${a.debut}</td>
+            <td>${a.fin ?? "-"}</td>
+            <td>${a.motif ?? "-"}</td>
+            <td>${a.id_salarie}</td>
+            <td>
+                <button class="edit-btn" data-id="${a.id_absence}">✏️</button>
+                <button class="delete-btn" data-id="${a.id_absence}">🗑️</button>
+            </td>
+        `;
 
         tbody.appendChild(tr);
     });
@@ -85,17 +85,17 @@ function renderAbsenceCards(): void {
         div.className = "card";
 
         div.innerHTML = `
-      <p><strong>ID :</strong> ${a.id_absence}</p>
-      <p><strong>Type :</strong> ${a.type}</p>
-      <p><strong>Début :</strong> ${a.debut}</p>
-      <p><strong>Fin :</strong> ${a.fin ?? "-"}</p>
-      <p><strong>Motif :</strong> ${a.motif ?? "-"}</p>
-      <p><strong>ID Salarié :</strong> ${a.id_salarie}</p>
-      <div class="card-actions">
-        <button class="edit-btn" data-id="${a.id_absence}">✏️</button>
-        <button class="delete-btn" data-id="${a.id_absence}">🗑️</button>
-      </div>
-    `;
+            <p><strong>ID :</strong> ${a.id_absence}</p>
+            <p><strong>Type :</strong> ${a.type}</p>
+            <p><strong>Début :</strong> ${a.debut}</p>
+            <p><strong>Fin :</strong> ${a.fin ?? "-"}</p>
+            <p><strong>Motif :</strong> ${a.motif ?? "-"}</p>
+            <p><strong>ID Salarié :</strong> ${a.id_salarie}</p>
+            <div class="card-actions">
+                <button class="edit-btn" data-id="${a.id_absence}">✏️</button>
+                <button class="delete-btn" data-id="${a.id_absence}">🗑️</button>
+            </div>
+        `;
 
         container.appendChild(div);
     });
@@ -108,9 +108,12 @@ function renderAbsenceCards(): void {
    ============================================================ */
 
 function setupAbsenceActions(): void {
-    document.querySelectorAll(".edit-btn").forEach(btn => {
+    const section = qs<HTMLElement>("#section-absences");
+
+    /* ----- EDIT ----- */
+    section.querySelectorAll<HTMLButtonElement>(".edit-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            const id = Number((btn as HTMLElement).dataset.id);
+            const id = Number(btn.dataset.id);
             const a = absences.find(x => x.id_absence === id);
             if (!a) return;
 
@@ -125,15 +128,20 @@ function setupAbsenceActions(): void {
         });
     });
 
-    document.querySelectorAll(".delete-btn").forEach(btn => {
+    /* ----- DELETE ----- */
+    section.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
-            const id = Number((btn as HTMLElement).dataset.id);
+            const id = Number(btn.dataset.id);
 
             if (!confirm("Supprimer cette absence ?")) return;
 
-            await httpDelete(`/api/absences/${id}`);
-            toast("Absence supprimée");
-            loadAbsences();
+            try {
+                await httpDelete(`/api/absences/${id}`);
+                toast("Absence supprimée");
+                loadAbsences();
+            } catch (err) {
+                toast("Impossible de supprimer cette absence.", "error");
+            }
         });
     });
 }
@@ -163,12 +171,21 @@ export function setupAbsenceForm(): void {
             return;
         }
 
-        if (id) {
-            await httpPutJSON(`/api/absences/${id}`, data);
-            toast("Absence mise à jour");
-        } else {
-            await httpPostJSON("/api/absences", data);
-            toast("Absence créée");
+        try {
+            if (id) {
+                await httpPutJSON(`/api/absences/${id}`, data);
+                toast("Absence mise à jour");
+            } else {
+                await httpPostJSON("/api/absences", data);
+                toast("Absence créée");
+            }
+        } catch (err) {
+            // 🔥 Message clair si l’ID salarié n’existe pas
+            toast(
+                "Impossible d’enregistrer l’absence : l’ID salarié indiqué n’existe pas.",
+                "error"
+            );
+            return;
         }
 
         form.reset();

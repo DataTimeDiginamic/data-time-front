@@ -204,17 +204,17 @@ define("app.absences", ["require", "exports", "app.utils"], function (require, e
             var _a, _b;
             const tr = document.createElement("tr");
             tr.innerHTML = `
-      <td>${a.id_absence}</td>
-      <td>${a.type}</td>
-      <td>${a.debut}</td>
-      <td>${(_a = a.fin) !== null && _a !== void 0 ? _a : "-"}</td>
-      <td>${(_b = a.motif) !== null && _b !== void 0 ? _b : "-"}</td>
-      <td>${a.id_salarie}</td>
-      <td>
-        <button class="edit-btn" data-id="${a.id_absence}">✏️</button>
-        <button class="delete-btn" data-id="${a.id_absence}">🗑️</button>
-      </td>
-    `;
+            <td>${a.id_absence}</td>
+            <td>${a.type}</td>
+            <td>${a.debut}</td>
+            <td>${(_a = a.fin) !== null && _a !== void 0 ? _a : "-"}</td>
+            <td>${(_b = a.motif) !== null && _b !== void 0 ? _b : "-"}</td>
+            <td>${a.id_salarie}</td>
+            <td>
+                <button class="edit-btn" data-id="${a.id_absence}">✏️</button>
+                <button class="delete-btn" data-id="${a.id_absence}">🗑️</button>
+            </td>
+        `;
             tbody.appendChild(tr);
         });
         setupAbsenceActions();
@@ -228,17 +228,17 @@ define("app.absences", ["require", "exports", "app.utils"], function (require, e
             const div = document.createElement("div");
             div.className = "card";
             div.innerHTML = `
-      <p><strong>ID :</strong> ${a.id_absence}</p>
-      <p><strong>Type :</strong> ${a.type}</p>
-      <p><strong>Début :</strong> ${a.debut}</p>
-      <p><strong>Fin :</strong> ${(_a = a.fin) !== null && _a !== void 0 ? _a : "-"}</p>
-      <p><strong>Motif :</strong> ${(_b = a.motif) !== null && _b !== void 0 ? _b : "-"}</p>
-      <p><strong>ID Salarié :</strong> ${a.id_salarie}</p>
-      <div class="card-actions">
-        <button class="edit-btn" data-id="${a.id_absence}">✏️</button>
-        <button class="delete-btn" data-id="${a.id_absence}">🗑️</button>
-      </div>
-    `;
+            <p><strong>ID :</strong> ${a.id_absence}</p>
+            <p><strong>Type :</strong> ${a.type}</p>
+            <p><strong>Début :</strong> ${a.debut}</p>
+            <p><strong>Fin :</strong> ${(_a = a.fin) !== null && _a !== void 0 ? _a : "-"}</p>
+            <p><strong>Motif :</strong> ${(_b = a.motif) !== null && _b !== void 0 ? _b : "-"}</p>
+            <p><strong>ID Salarié :</strong> ${a.id_salarie}</p>
+            <div class="card-actions">
+                <button class="edit-btn" data-id="${a.id_absence}">✏️</button>
+                <button class="delete-btn" data-id="${a.id_absence}">🗑️</button>
+            </div>
+        `;
             container.appendChild(div);
         });
         setupAbsenceActions();
@@ -247,7 +247,9 @@ define("app.absences", ["require", "exports", "app.utils"], function (require, e
        ACTIONS (EDIT / DELETE)
        ============================================================ */
     function setupAbsenceActions() {
-        document.querySelectorAll(".edit-btn").forEach(btn => {
+        const section = (0, app_utils_1.qs)("#section-absences");
+        /* ----- EDIT ----- */
+        section.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", () => {
                 var _a, _b;
                 const id = Number(btn.dataset.id);
@@ -263,14 +265,20 @@ define("app.absences", ["require", "exports", "app.utils"], function (require, e
                 (0, app_utils_1.qs)("#absence-form-title").textContent = "Modifier une absence";
             });
         });
-        document.querySelectorAll(".delete-btn").forEach(btn => {
+        /* ----- DELETE ----- */
+        section.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const id = Number(btn.dataset.id);
                 if (!confirm("Supprimer cette absence ?"))
                     return;
-                await (0, app_utils_1.httpDelete)(`/api/absences/${id}`);
-                (0, app_utils_1.toast)("Absence supprimée");
-                loadAbsences();
+                try {
+                    await (0, app_utils_1.httpDelete)(`/api/absences/${id}`);
+                    (0, app_utils_1.toast)("Absence supprimée");
+                    loadAbsences();
+                }
+                catch (err) {
+                    (0, app_utils_1.toast)("Impossible de supprimer cette absence.", "error");
+                }
             });
         });
     }
@@ -293,13 +301,20 @@ define("app.absences", ["require", "exports", "app.utils"], function (require, e
                 (0, app_utils_1.toast)("Les champs Début et ID Salarié sont obligatoires", "error");
                 return;
             }
-            if (id) {
-                await (0, app_utils_1.httpPutJSON)(`/api/absences/${id}`, data);
-                (0, app_utils_1.toast)("Absence mise à jour");
+            try {
+                if (id) {
+                    await (0, app_utils_1.httpPutJSON)(`/api/absences/${id}`, data);
+                    (0, app_utils_1.toast)("Absence mise à jour");
+                }
+                else {
+                    await (0, app_utils_1.httpPostJSON)("/api/absences", data);
+                    (0, app_utils_1.toast)("Absence créée");
+                }
             }
-            else {
-                await (0, app_utils_1.httpPostJSON)("/api/absences", data);
-                (0, app_utils_1.toast)("Absence créée");
+            catch (err) {
+                // 🔥 Message clair si l’ID salarié n’existe pas
+                (0, app_utils_1.toast)("Impossible d’enregistrer l’absence : l’ID salarié indiqué n’existe pas.", "error");
+                return;
             }
             form.reset();
             (0, app_utils_1.qs)("#absence-form-title").textContent = "Créer une absence";
@@ -398,7 +413,8 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
        ACTIONS (EDIT / DELETE)
        ============================================================ */
     function setupClientActions() {
-        (0, app_utils_2.qsa)(".edit-btn").forEach(btn => {
+        const section = (0, app_utils_2.qs)("#section-clients");
+        section.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", () => {
                 const id = Number(btn.dataset.id);
                 const client = clients.find(c => c.id_client === id);
@@ -409,7 +425,7 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
                 (0, app_utils_2.qs)("#client-form-title").textContent = "Modifier un client";
             });
         });
-        (0, app_utils_2.qsa)(".delete-btn").forEach(btn => {
+        section.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const id = Number(btn.dataset.id);
                 if (!confirm("Supprimer ce client ?"))
@@ -560,7 +576,9 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
        ACTIONS (EDIT / DELETE)
        ============================================================ */
     function setupProjetActions() {
-        (0, app_utils_3.qsa)(".edit-btn").forEach(btn => {
+        const section = (0, app_utils_3.qs)("#section-projets");
+        /* ----- EDIT ----- */
+        section.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", () => {
                 const id = Number(btn.dataset.id);
                 const projet = projets.find(p => p.id_projet === id);
@@ -571,14 +589,20 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
                 (0, app_utils_3.qs)("#projet-form-title").textContent = "Modifier un projet";
             });
         });
-        (0, app_utils_3.qsa)(".delete-btn").forEach(btn => {
+        /* ----- DELETE ----- */
+        section.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const id = Number(btn.dataset.id);
                 if (!confirm("Supprimer ce projet ?"))
                     return;
-                await (0, app_utils_3.httpPostForm)("/api/projet/delete", { id });
-                (0, app_utils_3.toast)("Projet supprimé");
-                loadProjets();
+                try {
+                    await (0, app_utils_3.httpPostForm)("/api/projet/delete", { id });
+                    (0, app_utils_3.toast)("Projet supprimé");
+                    loadProjets();
+                }
+                catch (err) {
+                    (0, app_utils_3.toast)("Impossible de supprimer ce projet car il est utilisé dans d'autres éléments (tâches, absences, etc.)", "error");
+                }
             });
         });
     }
@@ -595,13 +619,19 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
                 (0, app_utils_3.toast)("Le nom est obligatoire", "error");
                 return;
             }
-            if (id) {
-                await (0, app_utils_3.httpPostForm)("/api/projet/update", { id, nom });
-                (0, app_utils_3.toast)("Projet mis à jour");
+            try {
+                if (id) {
+                    await (0, app_utils_3.httpPostForm)("/api/projet/update", { id, nom });
+                    (0, app_utils_3.toast)("Projet mis à jour");
+                }
+                else {
+                    await (0, app_utils_3.httpPostForm)("/api/projet/add", { nom });
+                    (0, app_utils_3.toast)("Projet créé");
+                }
             }
-            else {
-                await (0, app_utils_3.httpPostForm)("/api/projet/add", { nom });
-                (0, app_utils_3.toast)("Projet créé");
+            catch (err) {
+                (0, app_utils_3.toast)("Erreur lors de l'enregistrement du projet", "error");
+                return;
             }
             form.reset();
             (0, app_utils_3.qs)("#projet-form-title").textContent = "Créer un projet";
@@ -676,18 +706,18 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
         salaries.forEach(s => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-      <td>${s.id_salarie}</td>
-      <td>${s.nom}</td>
-      <td>${s.prenom}</td>
-      <td>${s.poste}</td>
-      <td>${s.contrat}</td>
-      <td>${s.taux_journalier_moyen}</td>
-      <td>${s.role}</td>
-      <td>
-        <button class="edit-btn" data-id="${s.id_salarie}">✏️</button>
-        <button class="delete-btn" data-id="${s.id_salarie}">🗑️</button>
-      </td>
-    `;
+            <td>${s.id_salarie}</td>
+            <td>${s.nom}</td>
+            <td>${s.prenom}</td>
+            <td>${s.poste}</td>
+            <td>${s.contrat}</td>
+            <td>${s.taux_journalier_moyen}</td>
+            <td>${s.role}</td>
+            <td>
+                <button class="edit-btn" data-id="${s.id_salarie}">✏️</button>
+                <button class="delete-btn" data-id="${s.id_salarie}">🗑️</button>
+            </td>
+        `;
             tbody.appendChild(tr);
         });
         setupSalarieActions();
@@ -700,18 +730,18 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
             const div = document.createElement("div");
             div.className = "card";
             div.innerHTML = `
-      <p><strong>ID :</strong> ${s.id_salarie}</p>
-      <p><strong>Nom :</strong> ${s.nom}</p>
-      <p><strong>Prénom :</strong> ${s.prenom}</p>
-      <p><strong>Poste :</strong> ${s.poste}</p>
-      <p><strong>Contrat :</strong> ${s.contrat}</p>
-      <p><strong>TJM :</strong> ${s.taux_journalier_moyen}</p>
-      <p><strong>Role :</strong> ${s.role}</p>
-      <div class="card-actions">
-        <button class="edit-btn" data-id="${s.id_salarie}">✏️</button>
-        <button class="delete-btn" data-id="${s.id_salarie}">🗑️</button>
-      </div>
-    `;
+            <p><strong>ID :</strong> ${s.id_salarie}</p>
+            <p><strong>Nom :</strong> ${s.nom}</p>
+            <p><strong>Prénom :</strong> ${s.prenom}</p>
+            <p><strong>Poste :</strong> ${s.poste}</p>
+            <p><strong>Contrat :</strong> ${s.contrat}</p>
+            <p><strong>TJM :</strong> ${s.taux_journalier_moyen}</p>
+            <p><strong>Role :</strong> ${s.role}</p>
+            <div class="card-actions">
+                <button class="edit-btn" data-id="${s.id_salarie}">✏️</button>
+                <button class="delete-btn" data-id="${s.id_salarie}">🗑️</button>
+            </div>
+        `;
             container.appendChild(div);
         });
         setupSalarieActions();
@@ -720,7 +750,9 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
        ACTIONS (EDIT / DELETE)
        ============================================================ */
     function setupSalarieActions() {
-        document.querySelectorAll(".edit-btn").forEach(btn => {
+        const section = (0, app_utils_4.qs)("#section-salaries");
+        /* ----- EDIT ----- */
+        section.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", () => {
                 const id = Number(btn.dataset.id);
                 const s = salaries.find(x => x.id_salarie === id);
@@ -736,18 +768,26 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
                 (0, app_utils_4.qs)("#salarie-form-title").textContent = "Modifier un salarié";
             });
         });
-        document.querySelectorAll(".delete-btn").forEach(btn => {
+        /* ----- DELETE ----- */
+        section.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const id = Number(btn.dataset.id);
                 if (!confirm("Supprimer ce salarié ?"))
                     return;
-                const res = await fetch(`/api/salaries/${id}`, { method: "DELETE" });
-                if (!res.ok) {
-                    (0, app_utils_4.toast)("Erreur lors de la suppression", "error");
-                    return;
+                try {
+                    const res = await fetch(app_utils_4.API_BASE_URL + `/api/salaries/${id}`, {
+                        method: "DELETE"
+                    });
+                    if (!res.ok) {
+                        (0, app_utils_4.toast)("Impossible de supprimer ce salarié (peut-être utilisé ailleurs)", "error");
+                        return;
+                    }
+                    (0, app_utils_4.toast)("Salarié supprimé");
+                    loadSalaries();
                 }
-                (0, app_utils_4.toast)("Salarié supprimé");
-                loadSalaries();
+                catch (err) {
+                    (0, app_utils_4.toast)("Erreur lors de la suppression du salarié", "error");
+                }
             });
         });
     }
@@ -771,13 +811,19 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
                 (0, app_utils_4.toast)("Tous les champs sont obligatoires", "error");
                 return;
             }
-            if (id) {
-                await (0, app_utils_4.httpPostForm)(`/api/salaries/${id}`, data);
-                (0, app_utils_4.toast)("Salarié mis à jour");
+            try {
+                if (id) {
+                    await (0, app_utils_4.httpPostForm)(`/api/salaries/${id}`, data);
+                    (0, app_utils_4.toast)("Salarié mis à jour");
+                }
+                else {
+                    await (0, app_utils_4.httpPostForm)("/api/salaries", data);
+                    (0, app_utils_4.toast)("Salarié créé");
+                }
             }
-            else {
-                await (0, app_utils_4.httpPostForm)("/api/salaries", data);
-                (0, app_utils_4.toast)("Salarié créé");
+            catch (err) {
+                (0, app_utils_4.toast)("Erreur lors de l'enregistrement du salarié", "error");
+                return;
             }
             form.reset();
             (0, app_utils_4.qs)("#salarie-form-title").textContent = "Créer un salarié";
@@ -831,20 +877,20 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
             var _a;
             const tr = document.createElement("tr");
             tr.innerHTML = `
-      <td>${t.id_tache}</td>
-      <td>${t.Nom}</td>
-      <td>${t.temps_previsionnel}</td>
-      <td>${t.temps_passe}</td>
-      <td>${t.debut}</td>
-      <td>${(_a = t.fin) !== null && _a !== void 0 ? _a : "-"}</td>
-      <td>${t.statut}</td>
-      <td>${t.id_projet}</td>
-      <td>${t.id_salarie}</td>
-      <td>
-        <button class="edit-btn" data-id="${t.id_tache}">✏️</button>
-        <button class="delete-btn" data-id="${t.id_tache}">🗑️</button>
-      </td>
-    `;
+            <td>${t.id_tache}</td>
+            <td>${t.Nom}</td>
+            <td>${t.temps_previsionnel}</td>
+            <td>${t.temps_passe}</td>
+            <td>${t.debut}</td>
+            <td>${(_a = t.fin) !== null && _a !== void 0 ? _a : "-"}</td>
+            <td>${t.statut}</td>
+            <td>${t.id_projet}</td>
+            <td>${t.id_salarie}</td>
+            <td>
+                <button class="edit-btn" data-id="${t.id_tache}">✏️</button>
+                <button class="delete-btn" data-id="${t.id_tache}">🗑️</button>
+            </td>
+        `;
             tbody.appendChild(tr);
         });
         setupTacheActions();
@@ -858,20 +904,20 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
             const div = document.createElement("div");
             div.className = "card";
             div.innerHTML = `
-      <p><strong>ID :</strong> ${t.id_tache}</p>
-      <p><strong>Nom :</strong> ${t.Nom}</p>
-      <p><strong>Prévu :</strong> ${t.temps_previsionnel}</p>
-      <p><strong>Passé :</strong> ${t.temps_passe}</p>
-      <p><strong>Début :</strong> ${t.debut}</p>
-      <p><strong>Fin :</strong> ${(_a = t.fin) !== null && _a !== void 0 ? _a : "-"}</p>
-      <p><strong>Statut :</strong> ${t.statut}</p>
-      <p><strong>ID Projet :</strong> ${t.id_projet}</p>
-      <p><strong>ID Salarié :</strong> ${t.id_salarie}</p>
-      <div class="card-actions">
-        <button class="edit-btn" data-id="${t.id_tache}">✏️</button>
-        <button class="delete-btn" data-id="${t.id_tache}">🗑️</button>
-      </div>
-    `;
+            <p><strong>ID :</strong> ${t.id_tache}</p>
+            <p><strong>Nom :</strong> ${t.Nom}</p>
+            <p><strong>Prévu :</strong> ${t.temps_previsionnel}</p>
+            <p><strong>Passé :</strong> ${t.temps_passe}</p>
+            <p><strong>Début :</strong> ${t.debut}</p>
+            <p><strong>Fin :</strong> ${(_a = t.fin) !== null && _a !== void 0 ? _a : "-"}</p>
+            <p><strong>Statut :</strong> ${t.statut}</p>
+            <p><strong>ID Projet :</strong> ${t.id_projet}</p>
+            <p><strong>ID Salarié :</strong> ${t.id_salarie}</p>
+            <div class="card-actions">
+                <button class="edit-btn" data-id="${t.id_tache}">✏️</button>
+                <button class="delete-btn" data-id="${t.id_tache}">🗑️</button>
+            </div>
+        `;
             container.appendChild(div);
         });
         setupTacheActions();
@@ -880,7 +926,9 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
        ACTIONS (EDIT / DELETE)
        ============================================================ */
     function setupTacheActions() {
-        document.querySelectorAll(".edit-btn").forEach(btn => {
+        const section = (0, app_utils_5.qs)("#section-taches");
+        /* ----- EDIT ----- */
+        section.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", () => {
                 var _a;
                 const id = Number(btn.dataset.id);
@@ -899,14 +947,20 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
                 (0, app_utils_5.qs)("#tache-form-title").textContent = "Modifier une tâche";
             });
         });
-        document.querySelectorAll(".delete-btn").forEach(btn => {
+        /* ----- DELETE ----- */
+        section.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const id = Number(btn.dataset.id);
                 if (!confirm("Supprimer cette tâche ?"))
                     return;
-                await (0, app_utils_5.httpPostJSON)("/api/taches/delete", { id_tache: id });
-                (0, app_utils_5.toast)("Tâche supprimée");
-                loadTaches();
+                try {
+                    await (0, app_utils_5.httpPostJSON)("/api/taches/delete", { id_tache: id });
+                    (0, app_utils_5.toast)("Tâche supprimée");
+                    loadTaches();
+                }
+                catch (err) {
+                    (0, app_utils_5.toast)("Impossible de supprimer cette tâche.", "error");
+                }
             });
         });
     }
@@ -933,13 +987,19 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
                 (0, app_utils_5.toast)("Les champs Nom, Début, ID Projet et ID Salarié sont obligatoires", "error");
                 return;
             }
-            if (id) {
-                await (0, app_utils_5.httpPostJSON)("/api/taches/update", data);
-                (0, app_utils_5.toast)("Tâche mise à jour");
+            try {
+                if (id) {
+                    await (0, app_utils_5.httpPostJSON)("/api/taches/update", data);
+                    (0, app_utils_5.toast)("Tâche mise à jour");
+                }
+                else {
+                    await (0, app_utils_5.httpPostJSON)("/api/taches", data);
+                    (0, app_utils_5.toast)("Tâche créée");
+                }
             }
-            else {
-                await (0, app_utils_5.httpPostJSON)("/api/taches", data);
-                (0, app_utils_5.toast)("Tâche créée");
+            catch (err) {
+                (0, app_utils_5.toast)("Impossible d’enregistrer la tâche : l’ID projet ou l’ID salarié indiqué n’existe pas.", "error");
+                return;
             }
             form.reset();
             (0, app_utils_5.qs)("#tache-form-title").textContent = "Créer une tâche";

@@ -3,7 +3,8 @@ import {
     httpGet,
     httpPostForm,
     toast,
-    isMobile
+    isMobile,
+    API_BASE_URL
 } from "./app.utils";
 
 /* ============================================================
@@ -55,18 +56,18 @@ function renderSalarieTable(): void {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
-      <td>${s.id_salarie}</td>
-      <td>${s.nom}</td>
-      <td>${s.prenom}</td>
-      <td>${s.poste}</td>
-      <td>${s.contrat}</td>
-      <td>${s.taux_journalier_moyen}</td>
-      <td>${s.role}</td>
-      <td>
-        <button class="edit-btn" data-id="${s.id_salarie}">✏️</button>
-        <button class="delete-btn" data-id="${s.id_salarie}">🗑️</button>
-      </td>
-    `;
+            <td>${s.id_salarie}</td>
+            <td>${s.nom}</td>
+            <td>${s.prenom}</td>
+            <td>${s.poste}</td>
+            <td>${s.contrat}</td>
+            <td>${s.taux_journalier_moyen}</td>
+            <td>${s.role}</td>
+            <td>
+                <button class="edit-btn" data-id="${s.id_salarie}">✏️</button>
+                <button class="delete-btn" data-id="${s.id_salarie}">🗑️</button>
+            </td>
+        `;
 
         tbody.appendChild(tr);
     });
@@ -85,18 +86,18 @@ function renderSalarieCards(): void {
         div.className = "card";
 
         div.innerHTML = `
-      <p><strong>ID :</strong> ${s.id_salarie}</p>
-      <p><strong>Nom :</strong> ${s.nom}</p>
-      <p><strong>Prénom :</strong> ${s.prenom}</p>
-      <p><strong>Poste :</strong> ${s.poste}</p>
-      <p><strong>Contrat :</strong> ${s.contrat}</p>
-      <p><strong>TJM :</strong> ${s.taux_journalier_moyen}</p>
-      <p><strong>Role :</strong> ${s.role}</p>
-      <div class="card-actions">
-        <button class="edit-btn" data-id="${s.id_salarie}">✏️</button>
-        <button class="delete-btn" data-id="${s.id_salarie}">🗑️</button>
-      </div>
-    `;
+            <p><strong>ID :</strong> ${s.id_salarie}</p>
+            <p><strong>Nom :</strong> ${s.nom}</p>
+            <p><strong>Prénom :</strong> ${s.prenom}</p>
+            <p><strong>Poste :</strong> ${s.poste}</p>
+            <p><strong>Contrat :</strong> ${s.contrat}</p>
+            <p><strong>TJM :</strong> ${s.taux_journalier_moyen}</p>
+            <p><strong>Role :</strong> ${s.role}</p>
+            <div class="card-actions">
+                <button class="edit-btn" data-id="${s.id_salarie}">✏️</button>
+                <button class="delete-btn" data-id="${s.id_salarie}">🗑️</button>
+            </div>
+        `;
 
         container.appendChild(div);
     });
@@ -109,9 +110,12 @@ function renderSalarieCards(): void {
    ============================================================ */
 
 function setupSalarieActions(): void {
-    document.querySelectorAll(".edit-btn").forEach(btn => {
+    const section = qs<HTMLElement>("#section-salaries");
+
+    /* ----- EDIT ----- */
+    section.querySelectorAll<HTMLButtonElement>(".edit-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            const id = Number((btn as HTMLElement).dataset.id);
+            const id = Number(btn.dataset.id);
             const s = salaries.find(x => x.id_salarie === id);
             if (!s) return;
 
@@ -127,21 +131,28 @@ function setupSalarieActions(): void {
         });
     });
 
-    document.querySelectorAll(".delete-btn").forEach(btn => {
+    /* ----- DELETE ----- */
+    section.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
-            const id = Number((btn as HTMLElement).dataset.id);
+            const id = Number(btn.dataset.id);
 
             if (!confirm("Supprimer ce salarié ?")) return;
 
-            const res = await fetch(`/api/salaries/${id}`, { method: "DELETE" });
+            try {
+                const res = await fetch(API_BASE_URL + `/api/salaries/${id}`, {
+                    method: "DELETE"
+                });
 
-            if (!res.ok) {
-                toast("Erreur lors de la suppression", "error");
-                return;
+                if (!res.ok) {
+                    toast("Impossible de supprimer ce salarié (peut-être utilisé ailleurs)", "error");
+                    return;
+                }
+
+                toast("Salarié supprimé");
+                loadSalaries();
+            } catch (err) {
+                toast("Erreur lors de la suppression du salarié", "error");
             }
-
-            toast("Salarié supprimé");
-            loadSalaries();
         });
     });
 }
@@ -172,12 +183,17 @@ export function setupSalarieForm(): void {
             return;
         }
 
-        if (id) {
-            await httpPostForm(`/api/salaries/${id}`, data);
-            toast("Salarié mis à jour");
-        } else {
-            await httpPostForm("/api/salaries", data);
-            toast("Salarié créé");
+        try {
+            if (id) {
+                await httpPostForm(`/api/salaries/${id}`, data);
+                toast("Salarié mis à jour");
+            } else {
+                await httpPostForm("/api/salaries", data);
+                toast("Salarié créé");
+            }
+        } catch (err) {
+            toast("Erreur lors de l'enregistrement du salarié", "error");
+            return;
         }
 
         form.reset();

@@ -80,7 +80,9 @@ function renderClientCards() {
    ACTIONS (EDIT / DELETE)
    ============================================================ */
 function setupClientActions() {
-    qsa<HTMLButtonElement>(".edit-btn").forEach(btn => {
+    const section = qs<HTMLElement>("#section-clients");
+
+    section.querySelectorAll<HTMLButtonElement>(".edit-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             const id = Number(btn.dataset.id);
             const client = clients.find(c => c.id_client === id);
@@ -92,7 +94,7 @@ function setupClientActions() {
         });
     });
 
-    qsa<HTMLButtonElement>(".delete-btn").forEach(btn => {
+    section.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
             const id = Number(btn.dataset.id);
             if (!confirm("Supprimer ce client ?")) return;

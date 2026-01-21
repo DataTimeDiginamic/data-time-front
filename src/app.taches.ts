@@ -57,20 +57,20 @@ function renderTacheTable(): void {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
-      <td>${t.id_tache}</td>
-      <td>${t.Nom}</td>
-      <td>${t.temps_previsionnel}</td>
-      <td>${t.temps_passe}</td>
-      <td>${t.debut}</td>
-      <td>${t.fin ?? "-"}</td>
-      <td>${t.statut}</td>
-      <td>${t.id_projet}</td>
-      <td>${t.id_salarie}</td>
-      <td>
-        <button class="edit-btn" data-id="${t.id_tache}">✏️</button>
-        <button class="delete-btn" data-id="${t.id_tache}">🗑️</button>
-      </td>
-    `;
+            <td>${t.id_tache}</td>
+            <td>${t.Nom}</td>
+            <td>${t.temps_previsionnel}</td>
+            <td>${t.temps_passe}</td>
+            <td>${t.debut}</td>
+            <td>${t.fin ?? "-"}</td>
+            <td>${t.statut}</td>
+            <td>${t.id_projet}</td>
+            <td>${t.id_salarie}</td>
+            <td>
+                <button class="edit-btn" data-id="${t.id_tache}">✏️</button>
+                <button class="delete-btn" data-id="${t.id_tache}">🗑️</button>
+            </td>
+        `;
 
         tbody.appendChild(tr);
     });
@@ -89,20 +89,20 @@ function renderTacheCards(): void {
         div.className = "card";
 
         div.innerHTML = `
-      <p><strong>ID :</strong> ${t.id_tache}</p>
-      <p><strong>Nom :</strong> ${t.Nom}</p>
-      <p><strong>Prévu :</strong> ${t.temps_previsionnel}</p>
-      <p><strong>Passé :</strong> ${t.temps_passe}</p>
-      <p><strong>Début :</strong> ${t.debut}</p>
-      <p><strong>Fin :</strong> ${t.fin ?? "-"}</p>
-      <p><strong>Statut :</strong> ${t.statut}</p>
-      <p><strong>ID Projet :</strong> ${t.id_projet}</p>
-      <p><strong>ID Salarié :</strong> ${t.id_salarie}</p>
-      <div class="card-actions">
-        <button class="edit-btn" data-id="${t.id_tache}">✏️</button>
-        <button class="delete-btn" data-id="${t.id_tache}">🗑️</button>
-      </div>
-    `;
+            <p><strong>ID :</strong> ${t.id_tache}</p>
+            <p><strong>Nom :</strong> ${t.Nom}</p>
+            <p><strong>Prévu :</strong> ${t.temps_previsionnel}</p>
+            <p><strong>Passé :</strong> ${t.temps_passe}</p>
+            <p><strong>Début :</strong> ${t.debut}</p>
+            <p><strong>Fin :</strong> ${t.fin ?? "-"}</p>
+            <p><strong>Statut :</strong> ${t.statut}</p>
+            <p><strong>ID Projet :</strong> ${t.id_projet}</p>
+            <p><strong>ID Salarié :</strong> ${t.id_salarie}</p>
+            <div class="card-actions">
+                <button class="edit-btn" data-id="${t.id_tache}">✏️</button>
+                <button class="delete-btn" data-id="${t.id_tache}">🗑️</button>
+            </div>
+        `;
 
         container.appendChild(div);
     });
@@ -115,9 +115,12 @@ function renderTacheCards(): void {
    ============================================================ */
 
 function setupTacheActions(): void {
-    document.querySelectorAll(".edit-btn").forEach(btn => {
+    const section = qs<HTMLElement>("#section-taches");
+
+    /* ----- EDIT ----- */
+    section.querySelectorAll<HTMLButtonElement>(".edit-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            const id = Number((btn as HTMLElement).dataset.id);
+            const id = Number(btn.dataset.id);
             const t = taches.find(x => x.id_tache === id);
             if (!t) return;
 
@@ -135,15 +138,20 @@ function setupTacheActions(): void {
         });
     });
 
-    document.querySelectorAll(".delete-btn").forEach(btn => {
+    /* ----- DELETE ----- */
+    section.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
-            const id = Number((btn as HTMLElement).dataset.id);
+            const id = Number(btn.dataset.id);
 
             if (!confirm("Supprimer cette tâche ?")) return;
 
-            await httpPostJSON("/api/taches/delete", { id_tache: id });
-            toast("Tâche supprimée");
-            loadTaches();
+            try {
+                await httpPostJSON("/api/taches/delete", { id_tache: id });
+                toast("Tâche supprimée");
+                loadTaches();
+            } catch (err) {
+                toast("Impossible de supprimer cette tâche.", "error");
+            }
         });
     });
 }
@@ -177,12 +185,20 @@ export function setupTacheForm(): void {
             return;
         }
 
-        if (id) {
-            await httpPostJSON("/api/taches/update", data);
-            toast("Tâche mise à jour");
-        } else {
-            await httpPostJSON("/api/taches", data);
-            toast("Tâche créée");
+        try {
+            if (id) {
+                await httpPostJSON("/api/taches/update", data);
+                toast("Tâche mise à jour");
+            } else {
+                await httpPostJSON("/api/taches", data);
+                toast("Tâche créée");
+            }
+        } catch (err) {
+            toast(
+                "Impossible d’enregistrer la tâche : l’ID projet ou l’ID salarié indiqué n’existe pas.",
+                "error"
+            );
+            return;
         }
 
         form.reset();

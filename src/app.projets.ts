@@ -1,4 +1,4 @@
-import { qs, qsa, isMobile, toast, httpGet, httpPostForm } from "./app.utils";
+import { qs, isMobile, toast, httpGet, httpPostForm } from "./app.utils";
 
 /* ============================================================
    ÉTAT LOCAL
@@ -80,7 +80,10 @@ function renderProjetCards() {
    ACTIONS (EDIT / DELETE)
    ============================================================ */
 function setupProjetActions() {
-    qsa<HTMLButtonElement>(".edit-btn").forEach(btn => {
+    const section = qs<HTMLElement>("#section-projets");
+
+    /* ----- EDIT ----- */
+    section.querySelectorAll<HTMLButtonElement>(".edit-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             const id = Number(btn.dataset.id);
             const projet = projets.find(p => p.id_projet === id);
@@ -92,14 +95,22 @@ function setupProjetActions() {
         });
     });
 
-    qsa<HTMLButtonElement>(".delete-btn").forEach(btn => {
+    /* ----- DELETE ----- */
+    section.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
             const id = Number(btn.dataset.id);
             if (!confirm("Supprimer ce projet ?")) return;
 
-            await httpPostForm("/api/projet/delete", { id });
-            toast("Projet supprimé");
-            loadProjets();
+            try {
+                await httpPostForm("/api/projet/delete", { id });
+                toast("Projet supprimé");
+                loadProjets();
+            } catch (err) {
+                toast(
+                    "Impossible de supprimer ce projet car il est utilisé dans d'autres éléments (tâches, absences, etc.)",
+                    "error"
+                );
+            }
         });
     });
 }
@@ -121,12 +132,17 @@ function setupProjetForm() {
             return;
         }
 
-        if (id) {
-            await httpPostForm("/api/projet/update", { id, nom });
-            toast("Projet mis à jour");
-        } else {
-            await httpPostForm("/api/projet/add", { nom });
-            toast("Projet créé");
+        try {
+            if (id) {
+                await httpPostForm("/api/projet/update", { id, nom });
+                toast("Projet mis à jour");
+            } else {
+                await httpPostForm("/api/projet/add", { nom });
+                toast("Projet créé");
+            }
+        } catch (err) {
+            toast("Erreur lors de l'enregistrement du projet", "error");
+            return;
         }
 
         form.reset();
