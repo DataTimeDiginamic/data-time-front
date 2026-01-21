@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "amd",
+    "lib": ["DOM", "ES2017"],
+    "outFile": "public/app.js",
+    "strict": true,
+    "noImplicitAny": false,
+    "removeComments": true,
+    "sourceMap": false
+  },
+  "include": [
+    "public/app.ts"
+  ]
+}

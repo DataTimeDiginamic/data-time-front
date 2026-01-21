@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Gestion Clients & Projets</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+    <h1>Gestion Clients & Projets</h1>
+    <nav>
+        <button id="tab-clients" class="tab-button active">Clients</button>
+        <button id="tab-projets" class="tab-button">Projets</button>
+    </nav>
+</header>
+
+<main>
+    <!-- SECTION CLIENTS -->
+    <section id="section-clients" class="active-section">
+        <h2>Clients</h2>
+
+        <div class="panel">
+            <h3>Recherche de clients</h3>
+            <form id="client-search-form">
+                <label>
+                    Nom du client :
+                    <input type="text" id="client-search-query" />
+                </label>
+                <div class="form-actions">
+                    <button type="submit">Rechercher</button>
+                    <button type="button" id="client-search-reset" class="secondary">Réinitialiser</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h3>Liste des clients</h3>
+            <!-- Tableau desktop -->
+            <table>
+                <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Nom</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="client-table-body"></tbody>
+            </table>
+            <!-- Cartes mobile -->
+            <div id="client-cards" class="card-list"></div>
+        </div>
+
+        <div class="panel">
+            <h3 id="client-form-title">Créer un client</h3>
+            <form id="client-form">
+                <input type="hidden" id="client-id" />
+                <label>
+                    Nom du client :
+                    <input type="text" id="client-nom" required />
+                </label>
+                <div class="form-actions">
+                    <button type="submit" id="client-form-submit">Enregistrer</button>
+                    <button type="button" id="client-form-cancel" class="secondary">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- SECTION PROJETS -->
+    <section id="section-projets" class="hidden">
+        <h2>Projets</h2>
+
+        <div class="panel">
+            <h3>Recherche de projets</h3>
+            <form id="projet-search-form">
+                <label>
+                    Nom du projet :
+                    <input type="text" id="projet-search-query" />
+                </label>
+                <div class="form-actions">
+                    <button type="submit">Rechercher</button>
+                    <button type="button" id="projet-search-reset" class="secondary">Réinitialiser</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h3>Liste des projets</h3>
+            <!-- Tableau desktop -->
+            <table>
+                <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Nom</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="projet-table-body"></tbody>
+            </table>
+            <!-- Cartes mobile -->
+            <div id="projet-cards" class="card-list"></div>
+        </div>
+
+        <div class="panel">
+            <h3 id="projet-form-title">Créer un projet</h3>
+            <form id="projet-form">
+                <input type="hidden" id="projet-id" />
+                <label>
+                    Nom du projet :
+                    <input type="text" id="projet-nom" required />
+                </label>
+                <div class="form-actions">
+                    <button type="submit" id="projet-form-submit">Enregistrer</button>
+                    <button type="button" id="projet-form-cancel" class="secondary">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <small>Front TypeScript sans framework - connecté à http://localhost:8000/api</small>
+</footer>
+
+<!-- Toast notifications -->
+<div id="toast-container"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
