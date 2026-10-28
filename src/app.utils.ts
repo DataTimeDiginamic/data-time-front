@@ -2,7 +2,8 @@
    CONFIG API
    ============================================================ */
 
-export const API_BASE_URL = "http://localhost:8000";
+// L'API tourne sur Laragon (Apache). Avec "php -S localhost:8000 -t public", mettre "http://localhost:8000".
+export const API_BASE_URL = "http://localhost/datatime/game-catalog/public";
 
 /* ============================================================
    UTILITAIRES GLOBAUX
@@ -25,17 +26,27 @@ export function toast(message: string, type: "success" | "error" = "success"): v
    FETCH HELPERS
    ============================================================ */
 
+/** Message affiché quand le serveur répond avec une erreur */
+function statusMessage(status: number): string {
+    if (status === 401) return "Session expirée : veuillez vous reconnecter";
+    if (status === 403) return "Action interdite pour votre rôle";
+    return `Erreur serveur (${status})`;
+}
+
 /** GET JSON */
 export async function httpGet<T>(url: string): Promise<T> {
     try {
         const res = await fetch(API_BASE_URL + url, { credentials: "include" });
         if (!res.ok) {
-            toast(`Erreur serveur (${res.status})`, "error");
+            toast(statusMessage(res.status), "error");
             throw new Error(`GET ${url} -> ${res.status}`);
         }
         return await res.json();
     } catch (err) {
-        toast("Erreur réseau : impossible de contacter le serveur", "error");
+        // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+        if (err instanceof TypeError) {
+            toast("Erreur réseau : impossible de contacter le serveur", "error");
+        }
         throw err;
     }
 }
@@ -53,13 +64,16 @@ export async function httpPostForm<T>(url: string, data: Record<string, any>): P
         });
 
         if (!res.ok) {
-            toast(`Erreur serveur (${res.status})`, "error");
+            toast(statusMessage(res.status), "error");
             throw new Error(`POST ${url} -> ${res.status}`);
         }
 
         return await res.json();
     } catch (err) {
-        toast("Erreur réseau : impossible de contacter le serveur", "error");
+        // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+        if (err instanceof TypeError) {
+            toast("Erreur réseau : impossible de contacter le serveur", "error");
+        }
         throw err;
     }
 }
@@ -75,13 +89,16 @@ export async function httpPostJSON<T>(url: string, data: any): Promise<T> {
         });
 
         if (!res.ok) {
-            toast(`Erreur serveur (${res.status})`, "error");
+            toast(statusMessage(res.status), "error");
             throw new Error(`POST JSON ${url} -> ${res.status}`);
         }
 
         return await res.json();
     } catch (err) {
-        toast("Erreur réseau : impossible de contacter le serveur", "error");
+        // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+        if (err instanceof TypeError) {
+            toast("Erreur réseau : impossible de contacter le serveur", "error");
+        }
         throw err;
     }
 }
@@ -97,13 +114,16 @@ export async function httpPutJSON<T>(url: string, data: any): Promise<T> {
         });
 
         if (!res.ok) {
-            toast(`Erreur serveur (${res.status})`, "error");
+            toast(statusMessage(res.status), "error");
             throw new Error(`PUT ${url} -> ${res.status}`);
         }
 
         return await res.json();
     } catch (err) {
-        toast("Erreur réseau : impossible de contacter le serveur", "error");
+        // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+        if (err instanceof TypeError) {
+            toast("Erreur réseau : impossible de contacter le serveur", "error");
+        }
         throw err;
     }
 }
@@ -114,11 +134,14 @@ export async function httpDelete(url: string): Promise<void> {
         const res = await fetch(API_BASE_URL + url, { method: "DELETE", credentials: "include" });
 
         if (!res.ok) {
-            toast(`Erreur serveur (${res.status})`, "error");
+            toast(statusMessage(res.status), "error");
             throw new Error(`DELETE ${url} -> ${res.status}`);
         }
     } catch (err) {
-        toast("Erreur réseau : impossible de contacter le serveur", "error");
+        // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+        if (err instanceof TypeError) {
+            toast("Erreur réseau : impossible de contacter le serveur", "error");
+        }
         throw err;
     }
 }

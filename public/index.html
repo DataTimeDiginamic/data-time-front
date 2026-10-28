@@ -34,6 +34,7 @@
         <button class="tab-button" id="tab-salaries">Salariés</button>
         <button class="tab-button" id="tab-absences">Absences</button>
         <button class="tab-button" id="tab-taches">Tâches</button>
+        <button class="tab-button hidden" id="tab-utilisateurs">Utilisateurs</button>
     </nav>
 </header>
 
@@ -219,6 +220,42 @@
                 <div class="form-actions">
                     <button type="submit">Enregistrer</button>
                     <button type="button" id="tache-form-cancel" class="secondary">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- ========================= UTILISATEURS (admin) ========================= -->
+    <section id="section-utilisateurs" class="hidden">
+        <h2>Utilisateurs</h2>
+
+        <div class="panel">
+            <h3>Liste</h3>
+            <table>
+                <thead><tr><th>ID</th><th>Nom</th><th>Email</th><th>Rôle</th><th>Actions</th></tr></thead>
+                <tbody id="utilisateur-table-body"></tbody>
+            </table>
+            <div id="utilisateur-cards" class="card-list"></div>
+        </div>
+
+        <div class="panel">
+            <h3 id="utilisateur-form-title">Créer un utilisateur</h3>
+            <form id="utilisateur-form">
+                <input type="hidden" id="utilisateur-id">
+                <label>Nom : <input type="text" id="utilisateur-nom" required></label>
+                <label>Email : <input type="email" id="utilisateur-email" required></label>
+                <label>Mot de passe : <input type="password" id="utilisateur-password" required minlength="6" autocomplete="new-password"></label>
+                <label>Rôle :
+                    <select id="utilisateur-role">
+                        <option value="admin">Admin</option>
+                        <option value="recruteur">Recruteur</option>
+                        <option value="salarie" selected>Salarié</option>
+                        <option value="client">Client</option>
+                    </select>
+                </label>
+                <div class="form-actions">
+                    <button type="submit">Enregistrer</button>
+                    <button type="button" id="utilisateur-form-cancel" class="secondary">Annuler</button>
                 </div>
             </form>
         </div>

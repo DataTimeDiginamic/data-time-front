@@ -19,7 +19,8 @@ define("app.utils", ["require", "exports"], function (require, exports) {
     exports.qsa = qsa;
     exports.setupTabs = setupTabs;
     exports.setupResponsiveRerender = setupResponsiveRerender;
-    exports.API_BASE_URL = "http://localhost:8000";
+    // L'API tourne sur Laragon (Apache). Avec "php -S localhost:8000 -t public", mettre "http://localhost:8000".
+    exports.API_BASE_URL = "http://localhost/datatime/game-catalog/public";
     /* ============================================================
        UTILITAIRES GLOBAUX
        ============================================================ */
@@ -37,18 +38,29 @@ define("app.utils", ["require", "exports"], function (require, exports) {
     /* ============================================================
        FETCH HELPERS
        ============================================================ */
+    /** Message affiché quand le serveur répond avec une erreur */
+    function statusMessage(status) {
+        if (status === 401)
+            return "Session expirée : veuillez vous reconnecter";
+        if (status === 403)
+            return "Action interdite pour votre rôle";
+        return `Erreur serveur (${status})`;
+    }
     /** GET JSON */
     async function httpGet(url) {
         try {
             const res = await fetch(exports.API_BASE_URL + url, { credentials: "include" });
             if (!res.ok) {
-                toast(`Erreur serveur (${res.status})`, "error");
+                toast(statusMessage(res.status), "error");
                 throw new Error(`GET ${url} -> ${res.status}`);
             }
             return await res.json();
         }
         catch (err) {
-            toast("Erreur réseau : impossible de contacter le serveur", "error");
+            // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+            if (err instanceof TypeError) {
+                toast("Erreur réseau : impossible de contacter le serveur", "error");
+            }
             throw err;
         }
     }
@@ -64,13 +76,16 @@ define("app.utils", ["require", "exports"], function (require, exports) {
                 credentials: "include"
             });
             if (!res.ok) {
-                toast(`Erreur serveur (${res.status})`, "error");
+                toast(statusMessage(res.status), "error");
                 throw new Error(`POST ${url} -> ${res.status}`);
             }
             return await res.json();
         }
         catch (err) {
-            toast("Erreur réseau : impossible de contacter le serveur", "error");
+            // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+            if (err instanceof TypeError) {
+                toast("Erreur réseau : impossible de contacter le serveur", "error");
+            }
             throw err;
         }
     }
@@ -84,13 +99,16 @@ define("app.utils", ["require", "exports"], function (require, exports) {
                 credentials: "include"
             });
             if (!res.ok) {
-                toast(`Erreur serveur (${res.status})`, "error");
+                toast(statusMessage(res.status), "error");
                 throw new Error(`POST JSON ${url} -> ${res.status}`);
             }
             return await res.json();
         }
         catch (err) {
-            toast("Erreur réseau : impossible de contacter le serveur", "error");
+            // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+            if (err instanceof TypeError) {
+                toast("Erreur réseau : impossible de contacter le serveur", "error");
+            }
             throw err;
         }
     }
@@ -104,13 +122,16 @@ define("app.utils", ["require", "exports"], function (require, exports) {
                 credentials: "include"
             });
             if (!res.ok) {
-                toast(`Erreur serveur (${res.status})`, "error");
+                toast(statusMessage(res.status), "error");
                 throw new Error(`PUT ${url} -> ${res.status}`);
             }
             return await res.json();
         }
         catch (err) {
-            toast("Erreur réseau : impossible de contacter le serveur", "error");
+            // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+            if (err instanceof TypeError) {
+                toast("Erreur réseau : impossible de contacter le serveur", "error");
+            }
             throw err;
         }
     }
@@ -119,12 +140,15 @@ define("app.utils", ["require", "exports"], function (require, exports) {
         try {
             const res = await fetch(exports.API_BASE_URL + url, { method: "DELETE", credentials: "include" });
             if (!res.ok) {
-                toast(`Erreur serveur (${res.status})`, "error");
+                toast(statusMessage(res.status), "error");
                 throw new Error(`DELETE ${url} -> ${res.status}`);
             }
         }
         catch (err) {
-            toast("Erreur réseau : impossible de contacter le serveur", "error");
+            // Une erreur serveur (401, 403...) a déjà affiché son message : on n'ajoute pas "Erreur réseau"
+            if (err instanceof TypeError) {
+                toast("Erreur réseau : impossible de contacter le serveur", "error");
+            }
             throw err;
         }
     }
@@ -362,34 +386,50 @@ define("app.auth", ["require", "exports", "app.utils"], function (require, expor
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.checkSession = checkSession;
     exports.setupAuth = setupAuth;
+    /** Affiche seulement les onglets autorisés pour le rôle, et ouvre le premier */
+    function showTabs(role) {
+        let tabs = ["tab-clients", "tab-projets", "tab-salaries", "tab-absences", "tab-taches"];
+        if (role === "client") {
+            tabs = ["tab-projets", "tab-taches"];
+        }
+        if (role === "admin") {
+            tabs.push("tab-utilisateurs");
+        }
+        const allTabs = ["tab-clients", "tab-projets", "tab-salaries", "tab-absences", "tab-taches", "tab-utilisateurs"];
+        allTabs.forEach(id => {
+            (0, app_utils_2.qs)("#" + id).classList.toggle("hidden", !tabs.includes(id));
+        });
+        (0, app_utils_2.qs)("#" + tabs[0]).click();
+    }
     /** Affiche l'application ou le formulaire de connexion */
-    function showApp(connected, nom = "") {
+    function showApp(connected, nom = "", role = "") {
         if (connected) {
             (0, app_utils_2.qs)("#login-section").classList.add("hidden");
             (0, app_utils_2.qs)("#app-content").classList.remove("hidden");
-            (0, app_utils_2.qs)("#user-nom").textContent = nom;
+            (0, app_utils_2.qs)("#user-nom").textContent = `${nom} (${role})`;
+            showTabs(role);
         }
         else {
             (0, app_utils_2.qs)("#login-section").classList.remove("hidden");
             (0, app_utils_2.qs)("#app-content").classList.add("hidden");
         }
     }
-    /** Vérifie si une session est déjà ouverte côté serveur */
+    /** Vérifie si une session est déjà ouverte côté serveur : retourne le rôle, ou "" si non connecté */
     async function checkSession() {
         try {
             const res = await fetch(app_utils_2.API_BASE_URL + "/api/me", { credentials: "include" });
             if (!res.ok) {
                 showApp(false);
-                return false;
+                return "";
             }
             const data = await res.json();
-            showApp(true, data.user.nom);
-            return true;
+            showApp(true, data.user.nom, data.user.role);
+            return data.user.role;
         }
         catch (err) {
             showApp(false);
             (0, app_utils_2.toast)("Erreur réseau : impossible de contacter le serveur", "error");
-            return false;
+            return "";
         }
     }
     /** Branche le formulaire de connexion et le bouton de déconnexion */
@@ -415,8 +455,8 @@ define("app.auth", ["require", "exports", "app.utils"], function (require, expor
             }
             (0, app_utils_2.toast)("Connexion réussie");
             (0, app_utils_2.qs)("#login-form").reset();
-            showApp(true, data.user.nom);
-            onLogin();
+            showApp(true, data.user.nom, data.user.role);
+            onLogin(data.user.role);
         });
         (0, app_utils_2.qs)("#logout-btn").addEventListener("click", async () => {
             await (0, app_utils_2.httpPostForm)("/api/logout", {});
@@ -1122,58 +1162,239 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
         loadTaches();
     }
 });
+define("app.utilisateurs", ["require", "exports", "app.utils"], function (require, exports, app_utils_7) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.loadUtilisateurs = loadUtilisateurs;
+    exports.initUtilisateurs = initUtilisateurs;
+    /* ============================================================
+       ÉTAT LOCAL
+       ============================================================ */
+    let utilisateurs = [];
+    /* ============================================================
+       CHARGEMENT
+       ============================================================ */
+    async function loadUtilisateurs() {
+        utilisateurs = await (0, app_utils_7.httpGet)("/api/utilisateurs");
+        renderUtilisateurs();
+    }
+    /* ============================================================
+       RENDU
+       ============================================================ */
+    function renderUtilisateurs() {
+        if ((0, app_utils_7.isMobile)())
+            renderUtilisateurCards();
+        else
+            renderUtilisateurTable();
+    }
+    /* ---------- TABLE ---------- */
+    function renderUtilisateurTable() {
+        const tbody = (0, app_utils_7.qs)("#utilisateur-table-body");
+        tbody.innerHTML = "";
+        utilisateurs.forEach(u => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+            <td>${u.id_utilisateur}</td>
+            <td>${u.nom}</td>
+            <td>${u.email}</td>
+            <td>${u.role}</td>
+            <td>
+                <button class="view-btn" data-id="${u.id_utilisateur}">👁️</button>
+                <button class="edit-btn" data-id="${u.id_utilisateur}">✏️</button>
+                <button class="delete-btn" data-id="${u.id_utilisateur}">🗑️</button>
+            </td>
+        `;
+            tbody.appendChild(tr);
+        });
+        setupUtilisateurActions();
+    }
+    /* ---------- CARDS ---------- */
+    function renderUtilisateurCards() {
+        const container = (0, app_utils_7.qs)("#utilisateur-cards");
+        container.innerHTML = "";
+        utilisateurs.forEach(u => {
+            const div = document.createElement("div");
+            div.className = "card";
+            div.innerHTML = `
+            <p><strong>ID :</strong> ${u.id_utilisateur}</p>
+            <p><strong>Nom :</strong> ${u.nom}</p>
+            <p><strong>Email :</strong> ${u.email}</p>
+            <p><strong>Rôle :</strong> ${u.role}</p>
+            <div class="card-actions">
+                <button class="view-btn" data-id="${u.id_utilisateur}">👁️</button>
+                <button class="edit-btn" data-id="${u.id_utilisateur}">✏️</button>
+                <button class="delete-btn" data-id="${u.id_utilisateur}">🗑️</button>
+            </div>
+        `;
+            container.appendChild(div);
+        });
+        setupUtilisateurActions();
+    }
+    /* ============================================================
+       ACTIONS (VIEW / EDIT / DELETE)
+       ============================================================ */
+    function setupUtilisateurActions() {
+        const section = (0, app_utils_7.qs)("#section-utilisateurs");
+        section.querySelectorAll(".view-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const id = Number(btn.dataset.id);
+                const u = await (0, app_utils_7.httpGet)(`/api/utilisateurs/${id}`);
+                (0, app_utils_7.openDetailModal)("Détail de l'utilisateur", `
+                <p><strong>ID :</strong> ${u.id_utilisateur}</p>
+                <p><strong>Nom :</strong> ${u.nom}</p>
+                <p><strong>Email :</strong> ${u.email}</p>
+                <p><strong>Rôle :</strong> ${u.role}</p>
+            `);
+            });
+        });
+        section.querySelectorAll(".edit-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const id = Number(btn.dataset.id);
+                const u = utilisateurs.find(x => x.id_utilisateur === id);
+                if (!u)
+                    return;
+                (0, app_utils_7.qs)("#utilisateur-id").value = String(u.id_utilisateur);
+                (0, app_utils_7.qs)("#utilisateur-nom").value = u.nom;
+                (0, app_utils_7.qs)("#utilisateur-email").value = u.email;
+                (0, app_utils_7.qs)("#utilisateur-role").value = u.role;
+                (0, app_utils_7.qs)("#utilisateur-password").value = "";
+                (0, app_utils_7.qs)("#utilisateur-password").required = false;
+                (0, app_utils_7.qs)("#utilisateur-form-title").textContent = "Modifier un utilisateur";
+            });
+        });
+        section.querySelectorAll(".delete-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                var _a;
+                const id = Number(btn.dataset.id);
+                if (!confirm("Supprimer cet utilisateur ?"))
+                    return;
+                // On n'utilise pas httpDelete : on veut afficher le message du serveur
+                const res = await fetch(app_utils_7.API_BASE_URL + `/api/utilisateurs/${id}`, {
+                    method: "DELETE",
+                    credentials: "include"
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    (0, app_utils_7.toast)((_a = data.message) !== null && _a !== void 0 ? _a : "Erreur", "error");
+                    return;
+                }
+                (0, app_utils_7.toast)("Utilisateur supprimé");
+                loadUtilisateurs();
+            });
+        });
+    }
+    /* ============================================================
+       FORMULAIRE
+       ============================================================ */
+    function resetUtilisateurForm() {
+        (0, app_utils_7.qs)("#utilisateur-form").reset();
+        (0, app_utils_7.qs)("#utilisateur-password").required = true;
+        (0, app_utils_7.qs)("#utilisateur-form-title").textContent = "Créer un utilisateur";
+    }
+    function setupUtilisateurForm() {
+        const form = (0, app_utils_7.qs)("#utilisateur-form");
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const id = (0, app_utils_7.qs)("#utilisateur-id").value;
+            const body = new FormData();
+            body.append("nom", (0, app_utils_7.qs)("#utilisateur-nom").value.trim());
+            body.append("email", (0, app_utils_7.qs)("#utilisateur-email").value.trim());
+            body.append("mot_de_passe", (0, app_utils_7.qs)("#utilisateur-password").value);
+            body.append("role", (0, app_utils_7.qs)("#utilisateur-role").value);
+            // Création : POST /api/utilisateurs — Modification : POST /api/utilisateurs/{id}
+            const url = id ? `/api/utilisateurs/${id}` : "/api/utilisateurs";
+            const res = await fetch(app_utils_7.API_BASE_URL + url, {
+                method: "POST",
+                body: body,
+                credentials: "include"
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                // On affiche la première erreur de validation envoyée par le serveur
+                const firstError = data.errors ? Object.values(data.errors)[0] : data.message;
+                (0, app_utils_7.toast)(String(firstError), "error");
+                return;
+            }
+            (0, app_utils_7.toast)(id ? "Utilisateur mis à jour" : "Utilisateur créé");
+            resetUtilisateurForm();
+            loadUtilisateurs();
+        });
+        (0, app_utils_7.qs)("#utilisateur-form-cancel").addEventListener("click", resetUtilisateurForm);
+    }
+    /* ============================================================
+       INIT
+       ============================================================ */
+    function initUtilisateurs() {
+        setupUtilisateurForm();
+        loadUtilisateurs();
+    }
+});
 /* ============================================================
    IMPORTS
    ============================================================ */
-define("app", ["require", "exports", "app.utils", "app.auth", "app.clients", "app.projets", "app.salaries", "app.absences", "app.taches"], function (require, exports, app_utils_7, app_auth_1, app_clients_1, app_projets_1, app_salaries_1, app_absences_1, app_taches_1) {
+define("app", ["require", "exports", "app.utils", "app.auth", "app.clients", "app.projets", "app.salaries", "app.absences", "app.taches", "app.utilisateurs"], function (require, exports, app_utils_8, app_auth_1, app_clients_1, app_projets_1, app_salaries_1, app_absences_1, app_taches_1, app_utilisateurs_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     /* ============================================================
        INITIALISATION DES ONGLETS
        ============================================================ */
     function initTabs() {
-        (0, app_utils_7.setupTabs)({
+        (0, app_utils_8.setupTabs)({
             "tab-clients": "section-clients",
             "tab-projets": "section-projets",
             "tab-salaries": "section-salaries",
             "tab-absences": "section-absences",
-            "tab-taches": "section-taches"
+            "tab-taches": "section-taches",
+            "tab-utilisateurs": "section-utilisateurs"
         });
     }
     /* ============================================================
        RESPONSIVE
        ============================================================ */
+    // Rôle de l'utilisateur connecté (admin, recruteur, salarie, client)
+    let currentRole = "";
     function initResponsive() {
-        (0, app_utils_7.setupResponsiveRerender)(() => {
+        (0, app_utils_8.setupResponsiveRerender)(() => {
             // Rien à recharger si l'utilisateur n'est pas connecté
             if (document.getElementById("app-content").classList.contains("hidden"))
                 return;
             // On recharge seulement les listes pour forcer le re-render table/cards
-            (0, app_clients_1.loadClients)();
+            if (currentRole !== "client") {
+                (0, app_clients_1.loadClients)();
+                (0, app_salaries_1.loadSalaries)();
+                (0, app_absences_1.loadAbsences)();
+            }
             (0, app_projets_1.loadProjets)();
-            (0, app_salaries_1.loadSalaries)();
-            (0, app_absences_1.loadAbsences)();
             (0, app_taches_1.loadTaches)();
         });
     }
     /* ============================================================
        MAIN INIT
        ============================================================ */
-    function initModules() {
-        (0, app_clients_1.initClients)();
+    function initModules(role) {
+        currentRole = role;
+        // Le client voit seulement les projets et les tâches
+        if (role !== "client") {
+            (0, app_clients_1.initClients)();
+            (0, app_salaries_1.initSalaries)();
+            (0, app_absences_1.initAbsences)();
+        }
         (0, app_projets_1.initProjets)();
-        (0, app_salaries_1.initSalaries)();
-        (0, app_absences_1.initAbsences)();
         (0, app_taches_1.initTaches)();
+        // Seul l'admin gère les utilisateurs
+        if (role === "admin") {
+            (0, app_utilisateurs_1.initUtilisateurs)();
+        }
     }
     async function main() {
         initTabs();
         initResponsive();
-        (0, app_utils_7.setupDetailModal)();
+        (0, app_utils_8.setupDetailModal)();
         (0, app_auth_1.setupAuth)(initModules);
         // Les listes ne sont chargées que si l'utilisateur est connecté
-        if (await (0, app_auth_1.checkSession)()) {
-            initModules();
+        const role = await (0, app_auth_1.checkSession)();
+        if (role !== "") {
+            initModules(role);
         }
     }
     /* ============================================================

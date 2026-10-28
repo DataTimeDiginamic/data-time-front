@@ -10,6 +10,7 @@ import { initProjets, loadProjets } from "./app.projets";
 import { initSalaries, loadSalaries } from "./app.salaries";
 import { initAbsences, loadAbsences } from "./app.absences";
 import { initTaches, loadTaches } from "./app.taches";
+import { initUtilisateurs } from "./app.utilisateurs";
 
 /* ============================================================
    INITIALISATION DES ONGLETS
@@ -21,7 +22,8 @@ function initTabs(): void {
         "tab-projets": "section-projets",
         "tab-salaries": "section-salaries",
         "tab-absences": "section-absences",
-        "tab-taches": "section-taches"
+        "tab-taches": "section-taches",
+        "tab-utilisateurs": "section-utilisateurs"
     });
 }
 
@@ -29,16 +31,21 @@ function initTabs(): void {
    RESPONSIVE
    ============================================================ */
 
+// Rôle de l'utilisateur connecté (admin, recruteur, salarie, client)
+let currentRole = "";
+
 function initResponsive(): void {
     setupResponsiveRerender(() => {
         // Rien à recharger si l'utilisateur n'est pas connecté
         if (document.getElementById("app-content")!.classList.contains("hidden")) return;
 
         // On recharge seulement les listes pour forcer le re-render table/cards
-        loadClients();
+        if (currentRole !== "client") {
+            loadClients();
+            loadSalaries();
+            loadAbsences();
+        }
         loadProjets();
-        loadSalaries();
-        loadAbsences();
         loadTaches();
     });
 }
@@ -47,12 +54,22 @@ function initResponsive(): void {
    MAIN INIT
    ============================================================ */
 
-function initModules(): void {
-    initClients();
+function initModules(role: string): void {
+    currentRole = role;
+
+    // Le client voit seulement les projets et les tâches
+    if (role !== "client") {
+        initClients();
+        initSalaries();
+        initAbsences();
+    }
     initProjets();
-    initSalaries();
-    initAbsences();
     initTaches();
+
+    // Seul l'admin gère les utilisateurs
+    if (role === "admin") {
+        initUtilisateurs();
+    }
 }
 
 async function main(): Promise<void> {
@@ -62,8 +79,9 @@ async function main(): Promise<void> {
     setupAuth(initModules);
 
     // Les listes ne sont chargées que si l'utilisateur est connecté
-    if (await checkSession()) {
-        initModules();
+    const role = await checkSession();
+    if (role !== "") {
+        initModules(role);
     }
 }
 

@@ -4,38 +4,58 @@
 
 import { API_BASE_URL, qs, toast, httpPostForm } from "./app.utils";
 
+/** Affiche seulement les onglets autorisés pour le rôle, et ouvre le premier */
+function showTabs(role: string): void {
+    let tabs = ["tab-clients", "tab-projets", "tab-salaries", "tab-absences", "tab-taches"];
+
+    if (role === "client") {
+        tabs = ["tab-projets", "tab-taches"];
+    }
+    if (role === "admin") {
+        tabs.push("tab-utilisateurs");
+    }
+
+    const allTabs = ["tab-clients", "tab-projets", "tab-salaries", "tab-absences", "tab-taches", "tab-utilisateurs"];
+    allTabs.forEach(id => {
+        qs<HTMLElement>("#" + id).classList.toggle("hidden", !tabs.includes(id));
+    });
+
+    qs<HTMLElement>("#" + tabs[0]).click();
+}
+
 /** Affiche l'application ou le formulaire de connexion */
-function showApp(connected: boolean, nom: string = ""): void {
+function showApp(connected: boolean, nom: string = "", role: string = ""): void {
     if (connected) {
         qs<HTMLElement>("#login-section").classList.add("hidden");
         qs<HTMLElement>("#app-content").classList.remove("hidden");
-        qs<HTMLElement>("#user-nom").textContent = nom;
+        qs<HTMLElement>("#user-nom").textContent = `${nom} (${role})`;
+        showTabs(role);
     } else {
         qs<HTMLElement>("#login-section").classList.remove("hidden");
         qs<HTMLElement>("#app-content").classList.add("hidden");
     }
 }
 
-/** Vérifie si une session est déjà ouverte côté serveur */
-export async function checkSession(): Promise<boolean> {
+/** Vérifie si une session est déjà ouverte côté serveur : retourne le rôle, ou "" si non connecté */
+export async function checkSession(): Promise<string> {
     try {
         const res = await fetch(API_BASE_URL + "/api/me", { credentials: "include" });
         if (!res.ok) {
             showApp(false);
-            return false;
+            return "";
         }
         const data = await res.json();
-        showApp(true, data.user.nom);
-        return true;
+        showApp(true, data.user.nom, data.user.role);
+        return data.user.role;
     } catch (err) {
         showApp(false);
         toast("Erreur réseau : impossible de contacter le serveur", "error");
-        return false;
+        return "";
     }
 }
 
 /** Branche le formulaire de connexion et le bouton de déconnexion */
-export function setupAuth(onLogin: () => void): void {
+export function setupAuth(onLogin: (role: string) => void): void {
     qs<HTMLFormElement>("#login-form").addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -61,8 +81,8 @@ export function setupAuth(onLogin: () => void): void {
 
         toast("Connexion réussie");
         qs<HTMLFormElement>("#login-form").reset();
-        showApp(true, data.user.nom);
-        onLogin();
+        showApp(true, data.user.nom, data.user.role);
+        onLogin(data.user.role);
     });
 
     qs("#logout-btn").addEventListener("click", async () => {
