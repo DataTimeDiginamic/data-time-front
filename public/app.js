@@ -11,6 +11,9 @@ define("app.utils", ["require", "exports"], function (require, exports) {
     exports.httpPostJSON = httpPostJSON;
     exports.httpPutJSON = httpPutJSON;
     exports.httpDelete = httpDelete;
+    exports.openDetailModal = openDetailModal;
+    exports.closeDetailModal = closeDetailModal;
+    exports.setupDetailModal = setupDetailModal;
     exports.isMobile = isMobile;
     exports.qs = qs;
     exports.qsa = qsa;
@@ -37,7 +40,7 @@ define("app.utils", ["require", "exports"], function (require, exports) {
     /** GET JSON */
     async function httpGet(url) {
         try {
-            const res = await fetch(exports.API_BASE_URL + url);
+            const res = await fetch(exports.API_BASE_URL + url, { credentials: "include" });
             if (!res.ok) {
                 toast(`Erreur serveur (${res.status})`, "error");
                 throw new Error(`GET ${url} -> ${res.status}`);
@@ -57,7 +60,8 @@ define("app.utils", ["require", "exports"], function (require, exports) {
                 form.append(key, data[key]);
             const res = await fetch(exports.API_BASE_URL + url, {
                 method: "POST",
-                body: form
+                body: form,
+                credentials: "include"
             });
             if (!res.ok) {
                 toast(`Erreur serveur (${res.status})`, "error");
@@ -76,7 +80,8 @@ define("app.utils", ["require", "exports"], function (require, exports) {
             const res = await fetch(exports.API_BASE_URL + url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
+                body: JSON.stringify(data),
+                credentials: "include"
             });
             if (!res.ok) {
                 toast(`Erreur serveur (${res.status})`, "error");
@@ -95,7 +100,8 @@ define("app.utils", ["require", "exports"], function (require, exports) {
             const res = await fetch(exports.API_BASE_URL + url, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
+                body: JSON.stringify(data),
+                credentials: "include"
             });
             if (!res.ok) {
                 toast(`Erreur serveur (${res.status})`, "error");
@@ -111,7 +117,7 @@ define("app.utils", ["require", "exports"], function (require, exports) {
     /** DELETE JSON (Absence delete) */
     async function httpDelete(url) {
         try {
-            const res = await fetch(exports.API_BASE_URL + url, { method: "DELETE" });
+            const res = await fetch(exports.API_BASE_URL + url, { method: "DELETE", credentials: "include" });
             if (!res.ok) {
                 toast(`Erreur serveur (${res.status})`, "error");
                 throw new Error(`DELETE ${url} -> ${res.status}`);
@@ -121,6 +127,21 @@ define("app.utils", ["require", "exports"], function (require, exports) {
             toast("Erreur réseau : impossible de contacter le serveur", "error");
             throw err;
         }
+    }
+    /* ============================================================
+       MODALE DÉTAIL
+       ============================================================ */
+    /** Affiche la modale de détail avec un titre et du HTML pour le contenu */
+    function openDetailModal(title, bodyHtml) {
+        qs("#detail-modal-title").textContent = title;
+        qs("#detail-modal-body").innerHTML = bodyHtml;
+        qs("#detail-modal").classList.remove("hidden");
+    }
+    function closeDetailModal() {
+        qs("#detail-modal").classList.add("hidden");
+    }
+    function setupDetailModal() {
+        qs("#detail-modal-close").addEventListener("click", closeDetailModal);
     }
     /* ============================================================
        RESPONSIVE
@@ -333,7 +354,78 @@ define("app.absences", ["require", "exports", "app.utils"], function (require, e
         loadAbsences();
     }
 });
-define("app.clients", ["require", "exports", "app.utils"], function (require, exports, app_utils_2) {
+/* ============================================================
+   AUTHENTIFICATION (connexion / déconnexion)
+   ============================================================ */
+define("app.auth", ["require", "exports", "app.utils"], function (require, exports, app_utils_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.checkSession = checkSession;
+    exports.setupAuth = setupAuth;
+    /** Affiche l'application ou le formulaire de connexion */
+    function showApp(connected, nom = "") {
+        if (connected) {
+            (0, app_utils_2.qs)("#login-section").classList.add("hidden");
+            (0, app_utils_2.qs)("#app-content").classList.remove("hidden");
+            (0, app_utils_2.qs)("#user-nom").textContent = nom;
+        }
+        else {
+            (0, app_utils_2.qs)("#login-section").classList.remove("hidden");
+            (0, app_utils_2.qs)("#app-content").classList.add("hidden");
+        }
+    }
+    /** Vérifie si une session est déjà ouverte côté serveur */
+    async function checkSession() {
+        try {
+            const res = await fetch(app_utils_2.API_BASE_URL + "/api/me", { credentials: "include" });
+            if (!res.ok) {
+                showApp(false);
+                return false;
+            }
+            const data = await res.json();
+            showApp(true, data.user.nom);
+            return true;
+        }
+        catch (err) {
+            showApp(false);
+            (0, app_utils_2.toast)("Erreur réseau : impossible de contacter le serveur", "error");
+            return false;
+        }
+    }
+    /** Branche le formulaire de connexion et le bouton de déconnexion */
+    function setupAuth(onLogin) {
+        (0, app_utils_2.qs)("#login-form").addEventListener("submit", async (e) => {
+            var _a;
+            e.preventDefault();
+            const email = (0, app_utils_2.qs)("#login-email").value;
+            const motDePasse = (0, app_utils_2.qs)("#login-password").value;
+            // On n'utilise pas httpPostForm : un 401 (mauvais mot de passe) est un cas normal
+            const form = new FormData();
+            form.append("email", email);
+            form.append("mot_de_passe", motDePasse);
+            const res = await fetch(app_utils_2.API_BASE_URL + "/api/login", {
+                method: "POST",
+                body: form,
+                credentials: "include"
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                (0, app_utils_2.toast)((_a = data.message) !== null && _a !== void 0 ? _a : "Veuillez remplir tous les champs", "error");
+                return;
+            }
+            (0, app_utils_2.toast)("Connexion réussie");
+            (0, app_utils_2.qs)("#login-form").reset();
+            showApp(true, data.user.nom);
+            onLogin();
+        });
+        (0, app_utils_2.qs)("#logout-btn").addEventListener("click", async () => {
+            await (0, app_utils_2.httpPostForm)("/api/logout", {});
+            // On recharge la page : elle repart de zéro et affiche le formulaire de connexion
+            location.reload();
+        });
+    }
+});
+define("app.clients", ["require", "exports", "app.utils"], function (require, exports, app_utils_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.loadClients = loadClients;
@@ -359,7 +451,7 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
        CHARGEMENT
        ============================================================ */
     async function loadClients() {
-        const data = await (0, app_utils_2.httpGet)("/api/client");
+        const data = await (0, app_utils_3.httpGet)("/api/client");
         clients = extractClientList(data);
         renderClients();
     }
@@ -367,14 +459,14 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
        RENDU
        ============================================================ */
     function renderClients() {
-        if ((0, app_utils_2.isMobile)())
+        if ((0, app_utils_3.isMobile)())
             renderClientCards();
         else
             renderClientTable();
     }
     /* ---------- TABLE ---------- */
     function renderClientTable() {
-        const tbody = (0, app_utils_2.qs)("#client-table-body");
+        const tbody = (0, app_utils_3.qs)("#client-table-body");
         tbody.innerHTML = "";
         clients.forEach(c => {
             const tr = document.createElement("tr");
@@ -382,6 +474,7 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
             <td>${c.id_client}</td>
             <td>${c.nom}</td>
             <td>
+                <button class="view-btn" data-id="${c.id_client}">👁️</button>
                 <button class="edit-btn" data-id="${c.id_client}">✏️</button>
                 <button class="delete-btn" data-id="${c.id_client}">🗑️</button>
             </td>
@@ -392,7 +485,7 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
     }
     /* ---------- CARDS ---------- */
     function renderClientCards() {
-        const container = (0, app_utils_2.qs)("#client-cards");
+        const container = (0, app_utils_3.qs)("#client-cards");
         container.innerHTML = "";
         clients.forEach(c => {
             const div = document.createElement("div");
@@ -401,6 +494,7 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
             <p><strong>ID :</strong> ${c.id_client}</p>
             <p><strong>Nom :</strong> ${c.nom}</p>
             <div class="card-actions">
+                <button class="view-btn" data-id="${c.id_client}">👁️</button>
                 <button class="edit-btn" data-id="${c.id_client}">✏️</button>
                 <button class="delete-btn" data-id="${c.id_client}">🗑️</button>
             </div>
@@ -413,16 +507,26 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
        ACTIONS (EDIT / DELETE)
        ============================================================ */
     function setupClientActions() {
-        const section = (0, app_utils_2.qs)("#section-clients");
+        const section = (0, app_utils_3.qs)("#section-clients");
+        section.querySelectorAll(".view-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const id = Number(btn.dataset.id);
+                const client = await (0, app_utils_3.httpGet)(`/api/client/id/${id}`);
+                (0, app_utils_3.openDetailModal)("Détail du client", `
+                <p><strong>ID :</strong> ${client.id_client}</p>
+                <p><strong>Nom :</strong> ${client.nom}</p>
+            `);
+            });
+        });
         section.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", () => {
                 const id = Number(btn.dataset.id);
                 const client = clients.find(c => c.id_client === id);
                 if (!client)
                     return;
-                (0, app_utils_2.qs)("#client-id").value = String(client.id_client);
-                (0, app_utils_2.qs)("#client-nom").value = client.nom;
-                (0, app_utils_2.qs)("#client-form-title").textContent = "Modifier un client";
+                (0, app_utils_3.qs)("#client-id").value = String(client.id_client);
+                (0, app_utils_3.qs)("#client-nom").value = client.nom;
+                (0, app_utils_3.qs)("#client-form-title").textContent = "Modifier un client";
             });
         });
         section.querySelectorAll(".delete-btn").forEach(btn => {
@@ -430,8 +534,8 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
                 const id = Number(btn.dataset.id);
                 if (!confirm("Supprimer ce client ?"))
                     return;
-                await (0, app_utils_2.httpPostForm)("/api/client/delete", { id });
-                (0, app_utils_2.toast)("Client supprimé");
+                await (0, app_utils_3.httpPostForm)("/api/client/delete", { id });
+                (0, app_utils_3.toast)("Client supprimé");
                 loadClients();
             });
         });
@@ -440,50 +544,50 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
        FORMULAIRE
        ============================================================ */
     function setupClientForm() {
-        const form = (0, app_utils_2.qs)("#client-form");
+        const form = (0, app_utils_3.qs)("#client-form");
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const id = (0, app_utils_2.qs)("#client-id").value;
-            const nom = (0, app_utils_2.qs)("#client-nom").value.trim();
+            const id = (0, app_utils_3.qs)("#client-id").value;
+            const nom = (0, app_utils_3.qs)("#client-nom").value.trim();
             if (!nom) {
-                (0, app_utils_2.toast)("Le nom est obligatoire", "error");
+                (0, app_utils_3.toast)("Le nom est obligatoire", "error");
                 return;
             }
             if (id) {
-                await (0, app_utils_2.httpPostForm)("/api/client/update", { id, nom });
-                (0, app_utils_2.toast)("Client mis à jour");
+                await (0, app_utils_3.httpPostForm)("/api/client/update", { id, nom });
+                (0, app_utils_3.toast)("Client mis à jour");
             }
             else {
-                await (0, app_utils_2.httpPostForm)("/api/client/add", { nom });
-                (0, app_utils_2.toast)("Client créé");
+                await (0, app_utils_3.httpPostForm)("/api/client/add", { nom });
+                (0, app_utils_3.toast)("Client créé");
             }
             form.reset();
-            (0, app_utils_2.qs)("#client-form-title").textContent = "Créer un client";
+            (0, app_utils_3.qs)("#client-form-title").textContent = "Créer un client";
             loadClients();
         });
-        (0, app_utils_2.qs)("#client-form-cancel").addEventListener("click", () => {
+        (0, app_utils_3.qs)("#client-form-cancel").addEventListener("click", () => {
             form.reset();
-            (0, app_utils_2.qs)("#client-form-title").textContent = "Créer un client";
+            (0, app_utils_3.qs)("#client-form-title").textContent = "Créer un client";
         });
     }
     /* ============================================================
        RECHERCHE
        ============================================================ */
     function setupClientSearch() {
-        const form = (0, app_utils_2.qs)("#client-search-form");
+        const form = (0, app_utils_3.qs)("#client-search-form");
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const query = (0, app_utils_2.qs)("#client-search-query").value.trim();
+            const query = (0, app_utils_3.qs)("#client-search-query").value.trim();
             if (!query) {
                 loadClients();
                 return;
             }
-            const data = await (0, app_utils_2.httpGet)(`/api/client/nom/${encodeURIComponent(query)}`);
+            const data = await (0, app_utils_3.httpGet)(`/api/client/nom/${encodeURIComponent(query)}`);
             clients = extractClientList(data);
             renderClients();
         });
-        (0, app_utils_2.qs)("#client-search-reset").addEventListener("click", () => {
-            (0, app_utils_2.qs)("#client-search-query").value = "";
+        (0, app_utils_3.qs)("#client-search-reset").addEventListener("click", () => {
+            (0, app_utils_3.qs)("#client-search-query").value = "";
             loadClients();
         });
     }
@@ -496,7 +600,7 @@ define("app.clients", ["require", "exports", "app.utils"], function (require, ex
         loadClients();
     }
 });
-define("app.projets", ["require", "exports", "app.utils"], function (require, exports, app_utils_3) {
+define("app.projets", ["require", "exports", "app.utils"], function (require, exports, app_utils_4) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.loadProjets = loadProjets;
@@ -522,7 +626,7 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
        CHARGEMENT
        ============================================================ */
     async function loadProjets() {
-        const data = await (0, app_utils_3.httpGet)("/api/projet");
+        const data = await (0, app_utils_4.httpGet)("/api/projet");
         projets = extractProjetList(data);
         renderProjets();
     }
@@ -530,14 +634,14 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
        RENDU
        ============================================================ */
     function renderProjets() {
-        if ((0, app_utils_3.isMobile)())
+        if ((0, app_utils_4.isMobile)())
             renderProjetCards();
         else
             renderProjetTable();
     }
     /* ---------- TABLE ---------- */
     function renderProjetTable() {
-        const tbody = (0, app_utils_3.qs)("#projet-table-body");
+        const tbody = (0, app_utils_4.qs)("#projet-table-body");
         tbody.innerHTML = "";
         projets.forEach(p => {
             const tr = document.createElement("tr");
@@ -555,7 +659,7 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
     }
     /* ---------- CARDS ---------- */
     function renderProjetCards() {
-        const container = (0, app_utils_3.qs)("#projet-cards");
+        const container = (0, app_utils_4.qs)("#projet-cards");
         container.innerHTML = "";
         projets.forEach(p => {
             const div = document.createElement("div");
@@ -576,7 +680,7 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
        ACTIONS (EDIT / DELETE)
        ============================================================ */
     function setupProjetActions() {
-        const section = (0, app_utils_3.qs)("#section-projets");
+        const section = (0, app_utils_4.qs)("#section-projets");
         /* ----- EDIT ----- */
         section.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", () => {
@@ -584,9 +688,9 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
                 const projet = projets.find(p => p.id_projet === id);
                 if (!projet)
                     return;
-                (0, app_utils_3.qs)("#projet-id").value = String(projet.id_projet);
-                (0, app_utils_3.qs)("#projet-nom").value = projet.nom;
-                (0, app_utils_3.qs)("#projet-form-title").textContent = "Modifier un projet";
+                (0, app_utils_4.qs)("#projet-id").value = String(projet.id_projet);
+                (0, app_utils_4.qs)("#projet-nom").value = projet.nom;
+                (0, app_utils_4.qs)("#projet-form-title").textContent = "Modifier un projet";
             });
         });
         /* ----- DELETE ----- */
@@ -596,12 +700,12 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
                 if (!confirm("Supprimer ce projet ?"))
                     return;
                 try {
-                    await (0, app_utils_3.httpPostForm)("/api/projet/delete", { id });
-                    (0, app_utils_3.toast)("Projet supprimé");
+                    await (0, app_utils_4.httpPostForm)("/api/projet/delete", { id });
+                    (0, app_utils_4.toast)("Projet supprimé");
                     loadProjets();
                 }
                 catch (err) {
-                    (0, app_utils_3.toast)("Impossible de supprimer ce projet car il est utilisé dans d'autres éléments (tâches, absences, etc.)", "error");
+                    (0, app_utils_4.toast)("Impossible de supprimer ce projet car il est utilisé dans d'autres éléments (tâches, absences, etc.)", "error");
                 }
             });
         });
@@ -610,56 +714,56 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
        FORMULAIRE
        ============================================================ */
     function setupProjetForm() {
-        const form = (0, app_utils_3.qs)("#projet-form");
+        const form = (0, app_utils_4.qs)("#projet-form");
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const id = (0, app_utils_3.qs)("#projet-id").value;
-            const nom = (0, app_utils_3.qs)("#projet-nom").value.trim();
+            const id = (0, app_utils_4.qs)("#projet-id").value;
+            const nom = (0, app_utils_4.qs)("#projet-nom").value.trim();
             if (!nom) {
-                (0, app_utils_3.toast)("Le nom est obligatoire", "error");
+                (0, app_utils_4.toast)("Le nom est obligatoire", "error");
                 return;
             }
             try {
                 if (id) {
-                    await (0, app_utils_3.httpPostForm)("/api/projet/update", { id, nom });
-                    (0, app_utils_3.toast)("Projet mis à jour");
+                    await (0, app_utils_4.httpPostForm)("/api/projet/update", { id, nom });
+                    (0, app_utils_4.toast)("Projet mis à jour");
                 }
                 else {
-                    await (0, app_utils_3.httpPostForm)("/api/projet/add", { nom });
-                    (0, app_utils_3.toast)("Projet créé");
+                    await (0, app_utils_4.httpPostForm)("/api/projet/add", { nom });
+                    (0, app_utils_4.toast)("Projet créé");
                 }
             }
             catch (err) {
-                (0, app_utils_3.toast)("Erreur lors de l'enregistrement du projet", "error");
+                (0, app_utils_4.toast)("Erreur lors de l'enregistrement du projet", "error");
                 return;
             }
             form.reset();
-            (0, app_utils_3.qs)("#projet-form-title").textContent = "Créer un projet";
+            (0, app_utils_4.qs)("#projet-form-title").textContent = "Créer un projet";
             loadProjets();
         });
-        (0, app_utils_3.qs)("#projet-form-cancel").addEventListener("click", () => {
+        (0, app_utils_4.qs)("#projet-form-cancel").addEventListener("click", () => {
             form.reset();
-            (0, app_utils_3.qs)("#projet-form-title").textContent = "Créer un projet";
+            (0, app_utils_4.qs)("#projet-form-title").textContent = "Créer un projet";
         });
     }
     /* ============================================================
        RECHERCHE
        ============================================================ */
     function setupProjetSearch() {
-        const form = (0, app_utils_3.qs)("#projet-search-form");
+        const form = (0, app_utils_4.qs)("#projet-search-form");
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const query = (0, app_utils_3.qs)("#projet-search-query").value.trim();
+            const query = (0, app_utils_4.qs)("#projet-search-query").value.trim();
             if (!query) {
                 loadProjets();
                 return;
             }
-            const data = await (0, app_utils_3.httpGet)(`/api/projet/nom/${encodeURIComponent(query)}`);
+            const data = await (0, app_utils_4.httpGet)(`/api/projet/nom/${encodeURIComponent(query)}`);
             projets = extractProjetList(data);
             renderProjets();
         });
-        (0, app_utils_3.qs)("#projet-search-reset").addEventListener("click", () => {
-            (0, app_utils_3.qs)("#projet-search-query").value = "";
+        (0, app_utils_4.qs)("#projet-search-reset").addEventListener("click", () => {
+            (0, app_utils_4.qs)("#projet-search-query").value = "";
             loadProjets();
         });
     }
@@ -672,7 +776,7 @@ define("app.projets", ["require", "exports", "app.utils"], function (require, ex
         loadProjets();
     }
 });
-define("app.salaries", ["require", "exports", "app.utils"], function (require, exports, app_utils_4) {
+define("app.salaries", ["require", "exports", "app.utils"], function (require, exports, app_utils_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.loadSalaries = loadSalaries;
@@ -686,7 +790,7 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
        CHARGEMENT
        ============================================================ */
     async function loadSalaries() {
-        const data = await (0, app_utils_4.httpGet)("/api/salaries");
+        const data = await (0, app_utils_5.httpGet)("/api/salaries");
         salaries = data;
         renderSalaries();
     }
@@ -694,14 +798,14 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
        RENDU
        ============================================================ */
     function renderSalaries() {
-        if ((0, app_utils_4.isMobile)())
+        if ((0, app_utils_5.isMobile)())
             renderSalarieCards();
         else
             renderSalarieTable();
     }
     /* ---------- TABLE ---------- */
     function renderSalarieTable() {
-        const tbody = (0, app_utils_4.qs)("#salarie-table-body");
+        const tbody = (0, app_utils_5.qs)("#salarie-table-body");
         tbody.innerHTML = "";
         salaries.forEach(s => {
             const tr = document.createElement("tr");
@@ -724,7 +828,7 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
     }
     /* ---------- CARDS ---------- */
     function renderSalarieCards() {
-        const container = (0, app_utils_4.qs)("#salarie-cards");
+        const container = (0, app_utils_5.qs)("#salarie-cards");
         container.innerHTML = "";
         salaries.forEach(s => {
             const div = document.createElement("div");
@@ -750,7 +854,7 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
        ACTIONS (EDIT / DELETE)
        ============================================================ */
     function setupSalarieActions() {
-        const section = (0, app_utils_4.qs)("#section-salaries");
+        const section = (0, app_utils_5.qs)("#section-salaries");
         /* ----- EDIT ----- */
         section.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", () => {
@@ -758,14 +862,14 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
                 const s = salaries.find(x => x.id_salarie === id);
                 if (!s)
                     return;
-                (0, app_utils_4.qs)("#salarie-id").value = String(s.id_salarie);
-                (0, app_utils_4.qs)("#salarie-nom").value = s.nom;
-                (0, app_utils_4.qs)("#salarie-prenom").value = s.prenom;
-                (0, app_utils_4.qs)("#salarie-poste").value = s.poste;
-                (0, app_utils_4.qs)("#salarie-contrat").value = s.contrat;
-                (0, app_utils_4.qs)("#salarie-tjm").value = s.taux_journalier_moyen;
-                (0, app_utils_4.qs)("#salarie-role").value = String(s.role);
-                (0, app_utils_4.qs)("#salarie-form-title").textContent = "Modifier un salarié";
+                (0, app_utils_5.qs)("#salarie-id").value = String(s.id_salarie);
+                (0, app_utils_5.qs)("#salarie-nom").value = s.nom;
+                (0, app_utils_5.qs)("#salarie-prenom").value = s.prenom;
+                (0, app_utils_5.qs)("#salarie-poste").value = s.poste;
+                (0, app_utils_5.qs)("#salarie-contrat").value = s.contrat;
+                (0, app_utils_5.qs)("#salarie-tjm").value = s.taux_journalier_moyen;
+                (0, app_utils_5.qs)("#salarie-role").value = String(s.role);
+                (0, app_utils_5.qs)("#salarie-form-title").textContent = "Modifier un salarié";
             });
         });
         /* ----- DELETE ----- */
@@ -775,18 +879,18 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
                 if (!confirm("Supprimer ce salarié ?"))
                     return;
                 try {
-                    const res = await fetch(app_utils_4.API_BASE_URL + `/api/salaries/${id}`, {
+                    const res = await fetch(app_utils_5.API_BASE_URL + `/api/salaries/${id}`, {
                         method: "DELETE"
                     });
                     if (!res.ok) {
-                        (0, app_utils_4.toast)("Impossible de supprimer ce salarié (peut-être utilisé ailleurs)", "error");
+                        (0, app_utils_5.toast)("Impossible de supprimer ce salarié (peut-être utilisé ailleurs)", "error");
                         return;
                     }
-                    (0, app_utils_4.toast)("Salarié supprimé");
+                    (0, app_utils_5.toast)("Salarié supprimé");
                     loadSalaries();
                 }
                 catch (err) {
-                    (0, app_utils_4.toast)("Erreur lors de la suppression du salarié", "error");
+                    (0, app_utils_5.toast)("Erreur lors de la suppression du salarié", "error");
                 }
             });
         });
@@ -795,43 +899,43 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
        FORMULAIRE
        ============================================================ */
     function setupSalarieForm() {
-        const form = (0, app_utils_4.qs)("#salarie-form");
+        const form = (0, app_utils_5.qs)("#salarie-form");
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const id = (0, app_utils_4.qs)("#salarie-id").value;
+            const id = (0, app_utils_5.qs)("#salarie-id").value;
             const data = {
-                nom: (0, app_utils_4.qs)("#salarie-nom").value.trim(),
-                prenom: (0, app_utils_4.qs)("#salarie-prenom").value.trim(),
-                poste: (0, app_utils_4.qs)("#salarie-poste").value.trim(),
-                contrat: (0, app_utils_4.qs)("#salarie-contrat").value.trim(),
-                taux_journalier_moyen: (0, app_utils_4.qs)("#salarie-tjm").value.trim(),
-                role: (0, app_utils_4.qs)("#salarie-role").value.trim()
+                nom: (0, app_utils_5.qs)("#salarie-nom").value.trim(),
+                prenom: (0, app_utils_5.qs)("#salarie-prenom").value.trim(),
+                poste: (0, app_utils_5.qs)("#salarie-poste").value.trim(),
+                contrat: (0, app_utils_5.qs)("#salarie-contrat").value.trim(),
+                taux_journalier_moyen: (0, app_utils_5.qs)("#salarie-tjm").value.trim(),
+                role: (0, app_utils_5.qs)("#salarie-role").value.trim()
             };
             if (!data.nom || !data.prenom || !data.poste || !data.contrat || !data.taux_journalier_moyen) {
-                (0, app_utils_4.toast)("Tous les champs sont obligatoires", "error");
+                (0, app_utils_5.toast)("Tous les champs sont obligatoires", "error");
                 return;
             }
             try {
                 if (id) {
-                    await (0, app_utils_4.httpPostForm)(`/api/salaries/${id}`, data);
-                    (0, app_utils_4.toast)("Salarié mis à jour");
+                    await (0, app_utils_5.httpPostForm)(`/api/salaries/${id}`, data);
+                    (0, app_utils_5.toast)("Salarié mis à jour");
                 }
                 else {
-                    await (0, app_utils_4.httpPostForm)("/api/salaries", data);
-                    (0, app_utils_4.toast)("Salarié créé");
+                    await (0, app_utils_5.httpPostForm)("/api/salaries", data);
+                    (0, app_utils_5.toast)("Salarié créé");
                 }
             }
             catch (err) {
-                (0, app_utils_4.toast)("Erreur lors de l'enregistrement du salarié", "error");
+                (0, app_utils_5.toast)("Erreur lors de l'enregistrement du salarié", "error");
                 return;
             }
             form.reset();
-            (0, app_utils_4.qs)("#salarie-form-title").textContent = "Créer un salarié";
+            (0, app_utils_5.qs)("#salarie-form-title").textContent = "Créer un salarié";
             loadSalaries();
         });
-        (0, app_utils_4.qs)("#salarie-form-cancel").addEventListener("click", () => {
+        (0, app_utils_5.qs)("#salarie-form-cancel").addEventListener("click", () => {
             form.reset();
-            (0, app_utils_4.qs)("#salarie-form-title").textContent = "Créer un salarié";
+            (0, app_utils_5.qs)("#salarie-form-title").textContent = "Créer un salarié";
         });
     }
     /* ============================================================
@@ -842,7 +946,7 @@ define("app.salaries", ["require", "exports", "app.utils"], function (require, e
         loadSalaries();
     }
 });
-define("app.taches", ["require", "exports", "app.utils"], function (require, exports, app_utils_5) {
+define("app.taches", ["require", "exports", "app.utils"], function (require, exports, app_utils_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.loadTaches = loadTaches;
@@ -856,7 +960,7 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
        CHARGEMENT
        ============================================================ */
     async function loadTaches() {
-        const data = await (0, app_utils_5.httpGet)("/api/taches");
+        const data = await (0, app_utils_6.httpGet)("/api/taches");
         taches = data;
         renderTaches();
     }
@@ -864,14 +968,14 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
        RENDU
        ============================================================ */
     function renderTaches() {
-        if ((0, app_utils_5.isMobile)())
+        if ((0, app_utils_6.isMobile)())
             renderTacheCards();
         else
             renderTacheTable();
     }
     /* ---------- TABLE ---------- */
     function renderTacheTable() {
-        const tbody = (0, app_utils_5.qs)("#tache-table-body");
+        const tbody = (0, app_utils_6.qs)("#tache-table-body");
         tbody.innerHTML = "";
         taches.forEach(t => {
             var _a;
@@ -897,7 +1001,7 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
     }
     /* ---------- CARDS ---------- */
     function renderTacheCards() {
-        const container = (0, app_utils_5.qs)("#tache-cards");
+        const container = (0, app_utils_6.qs)("#tache-cards");
         container.innerHTML = "";
         taches.forEach(t => {
             var _a;
@@ -926,7 +1030,7 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
        ACTIONS (EDIT / DELETE)
        ============================================================ */
     function setupTacheActions() {
-        const section = (0, app_utils_5.qs)("#section-taches");
+        const section = (0, app_utils_6.qs)("#section-taches");
         /* ----- EDIT ----- */
         section.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", () => {
@@ -935,16 +1039,16 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
                 const t = taches.find(x => x.id_tache === id);
                 if (!t)
                     return;
-                (0, app_utils_5.qs)("#tache-id").value = String(t.id_tache);
-                (0, app_utils_5.qs)("#tache-nom").value = t.Nom;
-                (0, app_utils_5.qs)("#tache-prev").value = String(t.temps_previsionnel);
-                (0, app_utils_5.qs)("#tache-passe").value = String(t.temps_passe);
-                (0, app_utils_5.qs)("#tache-debut").value = t.debut;
-                (0, app_utils_5.qs)("#tache-fin").value = (_a = t.fin) !== null && _a !== void 0 ? _a : "";
-                (0, app_utils_5.qs)("#tache-statut").value = t.statut;
-                (0, app_utils_5.qs)("#tache-projet").value = String(t.id_projet);
-                (0, app_utils_5.qs)("#tache-salarie").value = String(t.id_salarie);
-                (0, app_utils_5.qs)("#tache-form-title").textContent = "Modifier une tâche";
+                (0, app_utils_6.qs)("#tache-id").value = String(t.id_tache);
+                (0, app_utils_6.qs)("#tache-nom").value = t.Nom;
+                (0, app_utils_6.qs)("#tache-prev").value = String(t.temps_previsionnel);
+                (0, app_utils_6.qs)("#tache-passe").value = String(t.temps_passe);
+                (0, app_utils_6.qs)("#tache-debut").value = t.debut;
+                (0, app_utils_6.qs)("#tache-fin").value = (_a = t.fin) !== null && _a !== void 0 ? _a : "";
+                (0, app_utils_6.qs)("#tache-statut").value = t.statut;
+                (0, app_utils_6.qs)("#tache-projet").value = String(t.id_projet);
+                (0, app_utils_6.qs)("#tache-salarie").value = String(t.id_salarie);
+                (0, app_utils_6.qs)("#tache-form-title").textContent = "Modifier une tâche";
             });
         });
         /* ----- DELETE ----- */
@@ -954,12 +1058,12 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
                 if (!confirm("Supprimer cette tâche ?"))
                     return;
                 try {
-                    await (0, app_utils_5.httpPostJSON)("/api/taches/delete", { id_tache: id });
-                    (0, app_utils_5.toast)("Tâche supprimée");
+                    await (0, app_utils_6.httpPostJSON)("/api/taches/delete", { id_tache: id });
+                    (0, app_utils_6.toast)("Tâche supprimée");
                     loadTaches();
                 }
                 catch (err) {
-                    (0, app_utils_5.toast)("Impossible de supprimer cette tâche.", "error");
+                    (0, app_utils_6.toast)("Impossible de supprimer cette tâche.", "error");
                 }
             });
         });
@@ -968,46 +1072,46 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
        FORMULAIRE
        ============================================================ */
     function setupTacheForm() {
-        const form = (0, app_utils_5.qs)("#tache-form");
+        const form = (0, app_utils_6.qs)("#tache-form");
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const id = (0, app_utils_5.qs)("#tache-id").value;
+            const id = (0, app_utils_6.qs)("#tache-id").value;
             const data = {
                 id_tache: id ? Number(id) : undefined,
-                Nom: (0, app_utils_5.qs)("#tache-nom").value.trim(),
-                temps_previsionnel: Number((0, app_utils_5.qs)("#tache-prev").value),
-                temps_passe: Number((0, app_utils_5.qs)("#tache-passe").value),
-                debut: (0, app_utils_5.qs)("#tache-debut").value,
-                fin: (0, app_utils_5.qs)("#tache-fin").value || null,
-                statut: (0, app_utils_5.qs)("#tache-statut").value.trim(),
-                id_projet: Number((0, app_utils_5.qs)("#tache-projet").value),
-                id_salarie: Number((0, app_utils_5.qs)("#tache-salarie").value)
+                Nom: (0, app_utils_6.qs)("#tache-nom").value.trim(),
+                temps_previsionnel: Number((0, app_utils_6.qs)("#tache-prev").value),
+                temps_passe: Number((0, app_utils_6.qs)("#tache-passe").value),
+                debut: (0, app_utils_6.qs)("#tache-debut").value,
+                fin: (0, app_utils_6.qs)("#tache-fin").value || null,
+                statut: (0, app_utils_6.qs)("#tache-statut").value.trim(),
+                id_projet: Number((0, app_utils_6.qs)("#tache-projet").value),
+                id_salarie: Number((0, app_utils_6.qs)("#tache-salarie").value)
             };
             if (!data.Nom || !data.debut || !data.id_projet || !data.id_salarie) {
-                (0, app_utils_5.toast)("Les champs Nom, Début, ID Projet et ID Salarié sont obligatoires", "error");
+                (0, app_utils_6.toast)("Les champs Nom, Début, ID Projet et ID Salarié sont obligatoires", "error");
                 return;
             }
             try {
                 if (id) {
-                    await (0, app_utils_5.httpPostJSON)("/api/taches/update", data);
-                    (0, app_utils_5.toast)("Tâche mise à jour");
+                    await (0, app_utils_6.httpPostJSON)("/api/taches/update", data);
+                    (0, app_utils_6.toast)("Tâche mise à jour");
                 }
                 else {
-                    await (0, app_utils_5.httpPostJSON)("/api/taches", data);
-                    (0, app_utils_5.toast)("Tâche créée");
+                    await (0, app_utils_6.httpPostJSON)("/api/taches", data);
+                    (0, app_utils_6.toast)("Tâche créée");
                 }
             }
             catch (err) {
-                (0, app_utils_5.toast)("Impossible d’enregistrer la tâche : l’ID projet ou l’ID salarié indiqué n’existe pas.", "error");
+                (0, app_utils_6.toast)("Impossible d’enregistrer la tâche : l’ID projet ou l’ID salarié indiqué n’existe pas.", "error");
                 return;
             }
             form.reset();
-            (0, app_utils_5.qs)("#tache-form-title").textContent = "Créer une tâche";
+            (0, app_utils_6.qs)("#tache-form-title").textContent = "Créer une tâche";
             loadTaches();
         });
-        (0, app_utils_5.qs)("#tache-form-cancel").addEventListener("click", () => {
+        (0, app_utils_6.qs)("#tache-form-cancel").addEventListener("click", () => {
             form.reset();
-            (0, app_utils_5.qs)("#tache-form-title").textContent = "Créer une tâche";
+            (0, app_utils_6.qs)("#tache-form-title").textContent = "Créer une tâche";
         });
     }
     /* ============================================================
@@ -1021,14 +1125,14 @@ define("app.taches", ["require", "exports", "app.utils"], function (require, exp
 /* ============================================================
    IMPORTS
    ============================================================ */
-define("app", ["require", "exports", "app.utils", "app.clients", "app.projets", "app.salaries", "app.absences", "app.taches"], function (require, exports, app_utils_6, app_clients_1, app_projets_1, app_salaries_1, app_absences_1, app_taches_1) {
+define("app", ["require", "exports", "app.utils", "app.auth", "app.clients", "app.projets", "app.salaries", "app.absences", "app.taches"], function (require, exports, app_utils_7, app_auth_1, app_clients_1, app_projets_1, app_salaries_1, app_absences_1, app_taches_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     /* ============================================================
        INITIALISATION DES ONGLETS
        ============================================================ */
     function initTabs() {
-        (0, app_utils_6.setupTabs)({
+        (0, app_utils_7.setupTabs)({
             "tab-clients": "section-clients",
             "tab-projets": "section-projets",
             "tab-salaries": "section-salaries",
@@ -1040,27 +1144,37 @@ define("app", ["require", "exports", "app.utils", "app.clients", "app.projets", 
        RESPONSIVE
        ============================================================ */
     function initResponsive() {
-        (0, app_utils_6.setupResponsiveRerender)(() => {
-            // On recharge les listes pour forcer le re-render table/cards
-            (0, app_clients_1.initClients)();
-            (0, app_projets_1.initProjets)();
-            (0, app_salaries_1.initSalaries)();
-            (0, app_absences_1.initAbsences)();
-            (0, app_taches_1.initTaches)();
+        (0, app_utils_7.setupResponsiveRerender)(() => {
+            // Rien à recharger si l'utilisateur n'est pas connecté
+            if (document.getElementById("app-content").classList.contains("hidden"))
+                return;
+            // On recharge seulement les listes pour forcer le re-render table/cards
+            (0, app_clients_1.loadClients)();
+            (0, app_projets_1.loadProjets)();
+            (0, app_salaries_1.loadSalaries)();
+            (0, app_absences_1.loadAbsences)();
+            (0, app_taches_1.loadTaches)();
         });
     }
     /* ============================================================
        MAIN INIT
        ============================================================ */
-    function main() {
-        initTabs();
-        initResponsive();
-        // Initialisation des modules
+    function initModules() {
         (0, app_clients_1.initClients)();
         (0, app_projets_1.initProjets)();
         (0, app_salaries_1.initSalaries)();
         (0, app_absences_1.initAbsences)();
         (0, app_taches_1.initTaches)();
+    }
+    async function main() {
+        initTabs();
+        initResponsive();
+        (0, app_utils_7.setupDetailModal)();
+        (0, app_auth_1.setupAuth)(initModules);
+        // Les listes ne sont chargées que si l'utilisateur est connecté
+        if (await (0, app_auth_1.checkSession)()) {
+            initModules();
+        }
     }
     /* ============================================================
        LANCEMENT — FIX AMD / REQUIREJS

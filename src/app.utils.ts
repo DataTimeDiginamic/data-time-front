@@ -28,7 +28,7 @@ export function toast(message: string, type: "success" | "error" = "success"): v
 /** GET JSON */
 export async function httpGet<T>(url: string): Promise<T> {
     try {
-        const res = await fetch(API_BASE_URL + url);
+        const res = await fetch(API_BASE_URL + url, { credentials: "include" });
         if (!res.ok) {
             toast(`Erreur serveur (${res.status})`, "error");
             throw new Error(`GET ${url} -> ${res.status}`);
@@ -48,7 +48,8 @@ export async function httpPostForm<T>(url: string, data: Record<string, any>): P
 
         const res = await fetch(API_BASE_URL + url, {
             method: "POST",
-            body: form
+            body: form,
+            credentials: "include"
         });
 
         if (!res.ok) {
@@ -69,7 +70,8 @@ export async function httpPostJSON<T>(url: string, data: any): Promise<T> {
         const res = await fetch(API_BASE_URL + url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            credentials: "include"
         });
 
         if (!res.ok) {
@@ -90,7 +92,8 @@ export async function httpPutJSON<T>(url: string, data: any): Promise<T> {
         const res = await fetch(API_BASE_URL + url, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            credentials: "include"
         });
 
         if (!res.ok) {
@@ -108,7 +111,7 @@ export async function httpPutJSON<T>(url: string, data: any): Promise<T> {
 /** DELETE JSON (Absence delete) */
 export async function httpDelete(url: string): Promise<void> {
     try {
-        const res = await fetch(API_BASE_URL + url, { method: "DELETE" });
+        const res = await fetch(API_BASE_URL + url, { method: "DELETE", credentials: "include" });
 
         if (!res.ok) {
             toast(`Erreur serveur (${res.status})`, "error");
@@ -118,6 +121,25 @@ export async function httpDelete(url: string): Promise<void> {
         toast("Erreur réseau : impossible de contacter le serveur", "error");
         throw err;
     }
+}
+
+/* ============================================================
+   MODALE DÉTAIL
+   ============================================================ */
+
+/** Affiche la modale de détail avec un titre et du HTML pour le contenu */
+export function openDetailModal(title: string, bodyHtml: string): void {
+    qs<HTMLElement>("#detail-modal-title").textContent = title;
+    qs<HTMLElement>("#detail-modal-body").innerHTML = bodyHtml;
+    qs<HTMLDivElement>("#detail-modal").classList.remove("hidden");
+}
+
+export function closeDetailModal(): void {
+    qs<HTMLDivElement>("#detail-modal").classList.add("hidden");
+}
+
+export function setupDetailModal(): void {
+    qs("#detail-modal-close").addEventListener("click", closeDetailModal);
 }
 
 /* ============================================================

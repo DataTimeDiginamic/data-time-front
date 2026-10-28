@@ -7,8 +7,27 @@
 </head>
 
 <body>
+<!-- ========================= CONNEXION ========================= -->
+<section id="login-section" class="active-section">
+    <div class="panel">
+        <h2>Connexion</h2>
+        <form id="login-form">
+            <label>Email : <input type="email" id="login-email" required></label>
+            <label>Mot de passe : <input type="password" id="login-password" required></label>
+            <div class="form-actions">
+                <button type="submit">Se connecter</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div id="app-content" class="hidden">
 <header>
     <h1>Gestion complète</h1>
+    <div>
+        <span id="user-nom"></span>
+        <button type="button" id="logout-btn" class="secondary">Déconnexion</button>
+    </div>
     <nav>
         <button class="tab-button active" id="tab-clients">Clients</button>
         <button class="tab-button" id="tab-projets">Projets</button>
@@ -206,11 +225,23 @@
     </section>
 
 </main>
+</div>
 
 <div id="toast-container"></div>
 
+<!-- ========================= MODALE DÉTAIL (générique) ========================= -->
+<div id="detail-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h3 id="detail-modal-title">Détail</h3>
+        <div id="detail-modal-body"></div>
+        <div class="form-actions">
+            <button type="button" id="detail-modal-close" class="secondary">Fermer</button>
+        </div>
+    </div>
+</div>
+
 <!-- ========================= REQUIREJS ========================= -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+<script src="require.min.js"></script>
 
 <script>
     require.config({

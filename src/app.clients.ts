@@ -1,4 +1,4 @@
-import { qs, qsa, isMobile, toast, httpGet, httpPostForm } from "./app.utils";
+import { qs, qsa, isMobile, toast, httpGet, httpPostForm, openDetailModal } from "./app.utils";
 
 /* ============================================================
    ÉTAT LOCAL
@@ -44,6 +44,7 @@ function renderClientTable() {
             <td>${c.id_client}</td>
             <td>${c.nom}</td>
             <td>
+                <button class="view-btn" data-id="${c.id_client}">👁️</button>
                 <button class="edit-btn" data-id="${c.id_client}">✏️</button>
                 <button class="delete-btn" data-id="${c.id_client}">🗑️</button>
             </td>
@@ -66,6 +67,7 @@ function renderClientCards() {
             <p><strong>ID :</strong> ${c.id_client}</p>
             <p><strong>Nom :</strong> ${c.nom}</p>
             <div class="card-actions">
+                <button class="view-btn" data-id="${c.id_client}">👁️</button>
                 <button class="edit-btn" data-id="${c.id_client}">✏️</button>
                 <button class="delete-btn" data-id="${c.id_client}">🗑️</button>
             </div>
@@ -81,6 +83,18 @@ function renderClientCards() {
    ============================================================ */
 function setupClientActions() {
     const section = qs<HTMLElement>("#section-clients");
+
+    section.querySelectorAll<HTMLButtonElement>(".view-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const id = Number(btn.dataset.id);
+            const client = await httpGet<any>(`/api/client/id/${id}`);
+
+            openDetailModal("Détail du client", `
+                <p><strong>ID :</strong> ${client.id_client}</p>
+                <p><strong>Nom :</strong> ${client.nom}</p>
+            `);
+        });
+    });
 
     section.querySelectorAll<HTMLButtonElement>(".edit-btn").forEach(btn => {
         btn.addEventListener("click", () => {

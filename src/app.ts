@@ -2,13 +2,14 @@
    IMPORTS
    ============================================================ */
 
-import { setupTabs, setupResponsiveRerender } from "./app.utils";
+import { setupTabs, setupResponsiveRerender, setupDetailModal } from "./app.utils";
 
-import { initClients } from "./app.clients";
-import { initProjets } from "./app.projets";
-import { initSalaries } from "./app.salaries";
-import { initAbsences } from "./app.absences";
-import { initTaches } from "./app.taches";
+import { checkSession, setupAuth } from "./app.auth";
+import { initClients, loadClients } from "./app.clients";
+import { initProjets, loadProjets } from "./app.projets";
+import { initSalaries, loadSalaries } from "./app.salaries";
+import { initAbsences, loadAbsences } from "./app.absences";
+import { initTaches, loadTaches } from "./app.taches";
 
 /* ============================================================
    INITIALISATION DES ONGLETS
@@ -30,12 +31,15 @@ function initTabs(): void {
 
 function initResponsive(): void {
     setupResponsiveRerender(() => {
-        // On recharge les listes pour forcer le re-render table/cards
-        initClients();
-        initProjets();
-        initSalaries();
-        initAbsences();
-        initTaches();
+        // Rien à recharger si l'utilisateur n'est pas connecté
+        if (document.getElementById("app-content")!.classList.contains("hidden")) return;
+
+        // On recharge seulement les listes pour forcer le re-render table/cards
+        loadClients();
+        loadProjets();
+        loadSalaries();
+        loadAbsences();
+        loadTaches();
     });
 }
 
@@ -43,16 +47,24 @@ function initResponsive(): void {
    MAIN INIT
    ============================================================ */
 
-function main(): void {
-    initTabs();
-    initResponsive();
-
-    // Initialisation des modules
+function initModules(): void {
     initClients();
     initProjets();
     initSalaries();
     initAbsences();
     initTaches();
+}
+
+async function main(): Promise<void> {
+    initTabs();
+    initResponsive();
+    setupDetailModal();
+    setupAuth(initModules);
+
+    // Les listes ne sont chargées que si l'utilisateur est connecté
+    if (await checkSession()) {
+        initModules();
+    }
 }
 
 /* ============================================================
