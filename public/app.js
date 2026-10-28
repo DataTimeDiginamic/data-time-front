@@ -20,7 +20,7 @@ define("app.utils", ["require", "exports"], function (require, exports) {
     exports.setupTabs = setupTabs;
     exports.setupResponsiveRerender = setupResponsiveRerender;
     // L'API tourne sur Laragon (Apache). Avec "php -S localhost:8000 -t public", mettre "http://localhost:8000".
-    exports.API_BASE_URL = "http://localhost/datatime/game-catalog/public";
+    exports.API_BASE_URL = "http://datatime.test/datatime/game-catalog/public";
     /* ============================================================
        UTILITAIRES GLOBAUX
        ============================================================ */
@@ -443,7 +443,7 @@ define("app.auth", ["require", "exports", "app.utils"], function (require, expor
             const form = new FormData();
             form.append("email", email);
             form.append("mot_de_passe", motDePasse);
-            const res = await fetch(app_utils_2.API_BASE_URL + "/api/login", {
+            const res = await fetch(app_utils_2.API_BASE_URL + "/login", {
                 method: "POST",
                 body: form,
                 credentials: "include"
@@ -459,7 +459,7 @@ define("app.auth", ["require", "exports", "app.utils"], function (require, expor
             onLogin(data.user.role);
         });
         (0, app_utils_2.qs)("#logout-btn").addEventListener("click", async () => {
-            await (0, app_utils_2.httpPostForm)("/api/logout", {});
+            await (0, app_utils_2.httpPostForm)("/logout", {});
             // On recharge la page : elle repart de zéro et affiche le formulaire de connexion
             location.reload();
         });

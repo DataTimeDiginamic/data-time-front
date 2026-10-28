@@ -3,7 +3,7 @@
    ============================================================ */
 
 // L'API tourne sur Laragon (Apache). Avec "php -S localhost:8000 -t public", mettre "http://localhost:8000".
-export const API_BASE_URL = "http://localhost/datatime/game-catalog/public";
+export const API_BASE_URL = "http://datatime.test/datatime/game-catalog/public";
 
 /* ============================================================
    UTILITAIRES GLOBAUX

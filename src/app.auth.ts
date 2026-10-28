@@ -67,7 +67,7 @@ export function setupAuth(onLogin: (role: string) => void): void {
         form.append("email", email);
         form.append("mot_de_passe", motDePasse);
 
-        const res = await fetch(API_BASE_URL + "/api/login", {
+        const res = await fetch(API_BASE_URL + "/login", {
             method: "POST",
             body: form,
             credentials: "include"
@@ -86,7 +86,7 @@ export function setupAuth(onLogin: (role: string) => void): void {
     });
 
     qs("#logout-btn").addEventListener("click", async () => {
-        await httpPostForm("/api/logout", {});
+        await httpPostForm("/logout", {});
         // On recharge la page : elle repart de zéro et affiche le formulaire de connexion
         location.reload();
     });
